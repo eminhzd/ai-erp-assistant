@@ -14,7 +14,15 @@ const eslintConfig = defineConfig([
       'object-shorthand': ['error', 'always'],
     },
   },
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts']),
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    '.agents/**',
+    'src/prisma/contract.d.ts',
+    'src/prisma/contract.json',
+  ]),
 ]);
 
 export default eslintConfig;

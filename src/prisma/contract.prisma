@@ -1,0 +1,295 @@
+// prisma/schema.prisma
+
+// use prisma-next
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  CANCELLED
+}
+
+enum Currency {
+  USD
+  EUR
+  AZN
+}
+
+enum StockMovementType {
+  PURCHASE
+  SALE
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+}
+
+model Company {
+  id       Int      @id @default(autoincrement())
+  name     String
+  taxId    String?
+  email    String?
+  phone    String?
+  address  String?
+  currency Currency @default(AZN)
+  isActive Boolean  @default(true)
+
+  products         Product[]
+  warehouses       Warehouse[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  salesInvoices    SalesInvoice[]
+  purchaseInvoices PurchaseInvoice[]
+  stockMovements   StockMovement[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@index([name])
+  @@index([taxId])
+}
+
+model Product {
+  id            Int     @id @default(autoincrement())
+  companyId     Int
+  sku           String
+  name          String
+  description   String?
+  unit          String  @default("pcs")
+  salePrice     Decimal
+  purchasePrice  Decimal
+  isActive      Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  stocks               WarehouseStock[]
+  salesInvoiceItems    SalesInvoiceItem[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
+  stockMovements       StockMovement[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@unique([companyId, sku])
+  @@index([companyId])
+  @@index([companyId, name])
+  @@index([companyId, isActive])
+}
+
+model Warehouse {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  name      String
+  address   String?
+  isActive  Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  stocks           WarehouseStock[]
+  stockMovements   StockMovement[]
+  salesInvoices    SalesInvoice[]
+  purchaseInvoices PurchaseInvoice[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([companyId, isActive])
+}
+
+model WarehouseStock {
+  id          Int     @id @default(autoincrement())
+  warehouseId Int
+  productId   Int
+  quantity    Decimal
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  updatedAt temporal.updatedAt()
+
+  @@unique([warehouseId, productId])
+  @@index([productId])
+}
+
+model Customer {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  taxId     String?
+  isActive  Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  salesInvoices SalesInvoice[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@index([companyId, taxId])
+}
+
+model Supplier {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  taxId     String?
+  isActive  Boolean @default(true)
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  purchaseInvoices PurchaseInvoice[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@index([companyId, taxId])
+}
+
+model SalesInvoice {
+  id            Int           @id @default(autoincrement())
+  companyId     Int
+  customerId    Int
+  warehouseId   Int
+  invoiceNumber String
+  status        InvoiceStatus @default(DRAFT)
+  currency      Currency
+
+  subtotal Decimal
+  discount Decimal @default(0)
+  tax      Decimal @default(0)
+  total    Decimal
+
+  issueDate DateTime?
+  dueDate   DateTime?
+  notes     String?
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  customer  Customer  @relation(fields: [customerId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  items          SalesInvoiceItem[]
+  stockMovements StockMovement[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@unique([companyId, invoiceNumber])
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([customerId])
+  @@index([warehouseId])
+  @@index([companyId, issueDate])
+}
+
+model SalesInvoiceItem {
+  id        Int     @id @default(autoincrement())
+  invoiceId Int
+  productId Int
+  quantity  Decimal
+  unitPrice Decimal
+  lineTotal Decimal
+
+  invoice SalesInvoice @relation(fields: [invoiceId], references: [id])
+  product Product      @relation(fields: [productId], references: [id])
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model PurchaseInvoice {
+  id            Int           @id @default(autoincrement())
+  companyId     Int
+  supplierId    Int
+  warehouseId   Int
+  invoiceNumber String
+  status        InvoiceStatus @default(DRAFT)
+  currency      Currency
+
+  subtotal Decimal
+  discount Decimal @default(0)
+  tax      Decimal @default(0)
+  total    Decimal
+
+  issueDate DateTime?
+  dueDate   DateTime?
+  notes     String?
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  supplier  Supplier  @relation(fields: [supplierId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  items          PurchaseInvoiceItem[]
+  stockMovements StockMovement[]
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@unique([companyId, invoiceNumber])
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([supplierId])
+  @@index([warehouseId])
+  @@index([companyId, issueDate])
+}
+
+model PurchaseInvoiceItem {
+  id        Int     @id @default(autoincrement())
+  invoiceId Int
+  productId Int
+  quantity  Decimal
+  unitPrice Decimal
+  lineTotal Decimal
+
+  invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id])
+  product Product         @relation(fields: [productId], references: [id])
+
+  createdAt DateTime         @default(now())
+  updatedAt temporal.updatedAt()
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model StockMovement {
+  id          Int               @id @default(autoincrement())
+  companyId   Int
+  warehouseId Int
+  productId   Int
+  type        StockMovementType
+  quantity    Decimal
+
+  salesInvoiceId    Int?
+  purchaseInvoiceId Int?
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  salesInvoice    SalesInvoice?    @relation(fields: [salesInvoiceId], references: [id])
+  purchaseInvoice PurchaseInvoice? @relation(fields: [purchaseInvoiceId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([warehouseId])
+  @@index([productId])
+  @@index([warehouseId, productId])
+  @@index([salesInvoiceId])
+  @@index([purchaseInvoiceId])
+  @@index([createdAt])
+}

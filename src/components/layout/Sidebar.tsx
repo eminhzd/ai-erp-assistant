@@ -1,0 +1,36 @@
+import { Button } from '@/components/ui/button';
+
+export function Sidebar() {
+  return (
+    <aside className="bg-background flex h-full w-64 shrink-0 flex-col border-r p-3">
+      <div>
+        <span>AI ERP Assistant</span>
+      </div>
+      <div>
+        <Button className="mt-2 h-10 w-full rounded-lg border px-3 text-left">
+          New Chat
+        </Button>
+      </div>
+      <div className="mt-2 flex flex-1 flex-col">
+        <h3 className="text-muted-foreground text-sm font-semibold">Chats</h3>
+        <div className="mt-2 flex flex-col gap-2">
+          {['Invoice for ABC', 'Supplier discussion', 'Monthly report'].map(
+            (chat) => (
+              <Button
+                variant="secondary"
+                className="w-full rounded-lg px-3 text-left text-xs"
+                key={chat}
+              >
+                {chat}
+              </Button>
+            ),
+          )}
+        </div>
+      </div>
+      <div className="mt-auto flex flex-col items-center">
+        <span>Emin Huseynzade</span>
+        <span>Frontend Developer</span>
+      </div>
+    </aside>
+  );
+}

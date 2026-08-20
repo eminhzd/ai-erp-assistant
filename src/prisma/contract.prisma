@@ -167,8 +167,8 @@ model SalesInvoice {
   currency      Currency
 
   subtotal Decimal
-  discount Decimal @default(0)
-  tax      Decimal @default(0)
+  discount Decimal @default("0")
+  tax      Decimal @default("0")
   total    Decimal
 
   issueDate DateTime?
@@ -221,8 +221,8 @@ model PurchaseInvoice {
   currency      Currency
 
   subtotal Decimal
-  discount Decimal @default(0)
-  tax      Decimal @default(0)
+  discount Decimal @default("0")
+  tax      Decimal @default("0")
   total    Decimal
 
   issueDate DateTime?

@@ -22,6 +22,7 @@ const eslintConfig = defineConfig([
     '.agents/**',
     'src/prisma/contract.d.ts',
     'src/prisma/contract.json',
+    'migrations/**',
   ]),
 ]);
 

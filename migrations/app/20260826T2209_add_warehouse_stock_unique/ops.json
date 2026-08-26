@@ -1,0 +1,86 @@
+[
+  {
+    "id": "dropConstraint.warehouseStock.warehouseStock_warehouseId_productId_key",
+    "label": "Drop constraint \"warehouseStock_warehouseId_productId_key\" on \"warehouseStock\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "warehouseStock_warehouseId_productId_key",
+        "table": "warehouseStock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"warehouseStock_warehouseId_productId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "warehouseStock_warehouseId_productId_key",
+          "public",
+          "\"public\".\"warehouseStock\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"warehouseStock_warehouseId_productId_key\"",
+        "sql": "ALTER TABLE \"public\".\"warehouseStock\" DROP CONSTRAINT \"warehouseStock_warehouseId_productId_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"warehouseStock_warehouseId_productId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "warehouseStock_warehouseId_productId_key",
+          "public",
+          "\"public\".\"warehouseStock\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.warehouseStock.warehouseStock_companyId_warehouseId_productId_key",
+    "label": "Add unique constraint on \"warehouseStock\" (companyId, warehouseId, productId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "warehouseStock_companyId_warehouseId_productId_key",
+        "table": "warehouseStock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"warehouseStock_companyId_warehouseId_productId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "warehouseStock_companyId_warehouseId_productId_key",
+          "public",
+          "\"public\".\"warehouseStock\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"warehouseStock_companyId_warehouseId_productId_key\"",
+        "sql": "ALTER TABLE \"public\".\"warehouseStock\" ADD CONSTRAINT \"warehouseStock_companyId_warehouseId_productId_key\" UNIQUE (\"companyId\", \"warehouseId\", \"productId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"warehouseStock_companyId_warehouseId_productId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "warehouseStock_companyId_warehouseId_productId_key",
+          "public",
+          "\"public\".\"warehouseStock\""
+        ]
+      }
+    ]
+  }
+]

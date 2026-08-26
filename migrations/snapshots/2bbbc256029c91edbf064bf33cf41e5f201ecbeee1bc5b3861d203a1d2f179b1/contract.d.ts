@@ -30,7 +30,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d71f6521fcac5cfd80da48e848eaab11a6967d0cfbbe0a137eeaec8a5333abc6'>;
+  StorageHashBase<'2bbbc256029c91edbf064bf33cf41e5f201ecbeee1bc5b3861d203a1d2f179b1'>;
 export type ExecutionHash =
   ExecutionHashBase<'97571ebd149d8ff650c6066749282e6da3795826c0b2942f4affb822f6cd65eb'>;
 export type ProfileHash =
@@ -621,6 +621,7 @@ export type FieldOutputTypes = {
     };
     readonly WarehouseStock: {
       readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly companyId: CodecTypes['pg/int4@1']['output'];
       readonly warehouseId: CodecTypes['pg/int4@1']['output'];
       readonly productId: CodecTypes['pg/int4@1']['output'];
       readonly quantity: CodecTypes['pg/numeric@1']['output'];
@@ -757,6 +758,7 @@ export type FieldInputTypes = {
     };
     readonly WarehouseStock: {
       readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly companyId: CodecTypes['pg/int4@1']['input'];
       readonly warehouseId: CodecTypes['pg/int4@1']['input'];
       readonly productId: CodecTypes['pg/int4@1']['input'];
       readonly quantity: CodecTypes['pg/numeric@1']['input'];
@@ -892,6 +894,7 @@ export type StorageColumnTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['output'];
     };
     readonly warehouseStock: {
+      readonly companyId: CodecTypes['pg/int4@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly productId: CodecTypes['pg/int4@1']['output'];
       readonly quantity: CodecTypes['pg/numeric@1']['output'];
@@ -1028,6 +1031,7 @@ export type StorageColumnInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['input'];
     };
     readonly warehouseStock: {
+      readonly companyId: CodecTypes['pg/int4@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly productId: CodecTypes['pg/int4@1']['input'];
       readonly quantity: CodecTypes['pg/numeric@1']['input'];
@@ -2265,6 +2269,11 @@ type ContractBase = Omit<
                     readonly expression: 'autoincrement()';
                   };
                 };
+                readonly companyId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
                 readonly warehouseId: {
                   readonly nativeType: 'int4';
                   readonly codecId: 'pg/int4@1';
@@ -2288,9 +2297,27 @@ type ContractBase = Omit<
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [
-                { readonly columns: readonly ['warehouseId', 'productId'] },
+                {
+                  readonly columns: readonly [
+                    'companyId',
+                    'warehouseId',
+                    'productId',
+                  ];
+                },
               ];
               indexes: readonly [
+                {
+                  readonly name: 'warehouseStock_companyId_idx_33acc5ed';
+                  readonly prefix: 'warehouseStock_companyId_idx';
+                  readonly columns: readonly ['companyId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'warehouseStock_companyId_warehouseId_idx_0cd2ac22';
+                  readonly prefix: 'warehouseStock_companyId_warehouseId_idx';
+                  readonly columns: readonly ['companyId', 'warehouseId'];
+                  readonly unique: false;
+                },
                 {
                   readonly name: 'warehouseStock_productId_idx_5858600a';
                   readonly prefix: 'warehouseStock_productId_idx';
@@ -2305,6 +2332,18 @@ type ContractBase = Omit<
                 },
               ];
               foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'warehouseStock';
+                    readonly columns: readonly ['companyId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'company';
+                    readonly columns: readonly ['id'];
+                  };
+                },
                 {
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -3826,6 +3865,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/int4@1';
                 };
               };
+              readonly companyId: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/int4@1';
+                };
+              };
               readonly warehouseId: {
                 readonly nullable: false;
                 readonly type: {
@@ -3856,6 +3902,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly company: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Company';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['companyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly product: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -3884,6 +3941,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly id: { readonly column: 'id' };
+                readonly companyId: { readonly column: 'companyId' };
                 readonly warehouseId: { readonly column: 'warehouseId' };
                 readonly productId: { readonly column: 'productId' };
                 readonly quantity: { readonly column: 'quantity' };

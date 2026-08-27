@@ -1,5 +1,6 @@
 import { db } from '@/prisma/db';
 import { getPurchaseInvoiceById } from '../purchase-invoices/purchase-invoice.service';
+import { NotFoundError } from '@/lib/errors/not-found-error';
 
 export type PurchaseInvoiceItemCreateInput = {
   invoiceId: number;
@@ -26,7 +27,7 @@ export async function createPurchaseInvoiceItem(
   );
 
   if (!invoice) {
-    throw new Error('Purchase invoice not found');
+    throw new NotFoundError('Purchase invoice not found');
   }
 
   return db.orm.public.PurchaseInvoiceItem.create(invoiceData);

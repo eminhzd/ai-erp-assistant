@@ -1,5 +1,6 @@
 import { db } from '@/prisma/db';
 import { getSalesInvoiceById } from '../sales-invoice/sales-invoice.service';
+import { NotFoundError } from '@/lib/errors/not-found-error';
 
 export type SalesInvoiceItemCreateInput = {
   invoiceId: number;
@@ -23,7 +24,7 @@ export async function createSalesInvoiceItem(
   const invoice = await getSalesInvoiceById(companyId, invoiceData.invoiceId);
 
   if (!invoice) {
-    throw new Error('Sales invoice not found');
+    throw new NotFoundError('Sales invoice not found');
   }
 
   return db.orm.public.SalesInvoiceItem.create(invoiceData);

@@ -8,6 +8,7 @@ import {
 } from '@/lib/decimal';
 
 import type { DbClient } from '@/prisma/types';
+import { ConflictError, ValidationError, NotFoundError } from '@/lib/errors';
 
 export type WarehouseStockCreateInput = {
   productId: number;
@@ -37,7 +38,7 @@ export async function createWarehouseStock(
   );
 
   if (existing) {
-    throw new Error('Warehouse stock already exists');
+    throw new ConflictError('Warehouse stock already exists');
   }
 
   return client.orm.public.WarehouseStock.create({
@@ -76,7 +77,7 @@ export async function increaseWarehouseStock(
   client: DbClient = db,
 ) {
   if (!isPositiveDecimal(quantity)) {
-    throw new Error('Quantity must be a positive decimal value');
+    throw new ValidationError('Quantity must be a positive decimal value');
   }
 
   const currentStock = await getWarehouseStock(
@@ -112,7 +113,7 @@ export async function decreaseWarehouseStock(
   client: DbClient = db,
 ) {
   if (!isPositiveDecimal(quantity)) {
-    throw new Error('Quantity must be a positive decimal value');
+    throw new ValidationError('Quantity must be a positive decimal value');
   }
 
   const currentStock = await getWarehouseStock(
@@ -123,11 +124,11 @@ export async function decreaseWarehouseStock(
   );
 
   if (!currentStock) {
-    throw new Error('Warehouse stock not found');
+    throw new NotFoundError('Warehouse stock not found');
   }
 
   if (compareDecimal(currentStock.quantity, quantity) < 0) {
-    throw new Error('Insufficient stock quantity');
+    throw new ConflictError('Insufficient stock quantity');
   }
 
   return client.orm.public.WarehouseStock.where({

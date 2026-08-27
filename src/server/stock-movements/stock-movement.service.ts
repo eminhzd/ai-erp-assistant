@@ -1,10 +1,16 @@
 import { db } from '@/prisma/db';
+
 import { getWarehouseById } from '../warehouses/warehouse.service';
 import { getProductById } from '../products/product.service';
 import { getPurchaseInvoiceById } from '../purchase-invoices/purchase-invoice.service';
 import { getSalesInvoiceById } from '../sales-invoice/sales-invoice.service';
 
-// type StockMovementCreateInput = Parameters<typeof db.orm.public.StockMovement.create>[0];
+import {
+  decreaseWarehouseStock,
+  increaseWarehouseStock,
+} from '../warehouse-stock/warehouse-stock.service';
+
+import { isPositiveDecimal } from '@/lib/decimal';
 
 export type StockMovementType =
   'PURCHASE' | 'SALE' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT';
@@ -33,9 +39,7 @@ export async function createStockMovement(
   } = stockMovementData;
 
   // Quantity validation
-  const parsedQuantity = Number(quantity);
-
-  if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
+  if (!isPositiveDecimal(quantity)) {
     throw new Error('Stock movement quantity must be greater than zero');
   }
 
@@ -117,7 +121,33 @@ export async function createStockMovement(
     }
   }
 
-  return db.orm.public.StockMovement.create(stockMovementData);
+  return db.transaction(async (tx) => {
+    const movement =
+      await tx.orm.public.StockMovement.create(stockMovementData);
+
+    const stockOperationData = {
+      companyId,
+      warehouseId,
+      productId,
+      quantity,
+    };
+
+    switch (type) {
+      case 'PURCHASE':
+      case 'ADJUSTMENT_IN':
+        await increaseWarehouseStock(stockOperationData, tx);
+
+        break;
+
+      case 'SALE':
+      case 'ADJUSTMENT_OUT':
+        await decreaseWarehouseStock(stockOperationData, tx);
+
+        break;
+    }
+
+    return movement;
+  });
 }
 
 export async function getStockMovementsByWarehouse(
@@ -134,34 +164,25 @@ export async function getStockMovementsByProduct(
   companyId: number,
   productId: number,
 ) {
-  return db.orm.public.StockMovement.where({ companyId, productId }).all();
+  return db.orm.public.StockMovement.where({
+    companyId,
+    productId,
+  }).all();
 }
 
 export async function getStockMovementsById(companyId: number, id: number) {
-  return db.orm.public.StockMovement.where({ companyId, id }).first();
+  return db.orm.public.StockMovement.where({
+    companyId,
+    id,
+  }).first();
 }
 
 export async function getStockMovementsByType(
   companyId: number,
   type: StockMovementType,
 ) {
-  return db.orm.public.StockMovement.where({ companyId, type }).all();
+  return db.orm.public.StockMovement.where({
+    companyId,
+    type,
+  }).all();
 }
-
-// export async function increaseStock(
-//   companyId: number,
-//   warehouseId: number,
-//   warehouseData: WarehouseUpdateInput,
-// ) {
-//   return db.orm.public.Warehouse.where({
-//     companyId,
-//     id: warehouseId,
-//     isActive: true,
-//   }).update(warehouseData);
-// }
-
-// export async function decreaseStock(companyId: number, warehouseId: number) {
-//   return db.orm.public.Warehouse.where({ companyId, id: warehouseId }).update({
-//     isActive: false,
-//   });
-// }

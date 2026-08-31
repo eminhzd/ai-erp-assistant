@@ -37,7 +37,6 @@
           "InvoiceStatus": {
             "codecId": "pg/text@1",
             "members": [
-              { "name": "DRAFT", "value": "DRAFT" },
               { "name": "ISSUED", "value": "ISSUED" },
               { "name": "PAID", "value": "PAID" },
               { "name": "CANCELLED", "value": "CANCELLED" }
@@ -1451,8 +1450,8 @@
                   "prefix": "purchaseInvoice_currency_check"
                 },
                 {
-                  "expression": "\"status\" IN ('DRAFT', 'ISSUED', 'PAID', 'CANCELLED')",
-                  "name": "purchaseInvoice_status_check_6cdc860a",
+                  "expression": "\"status\" IN ('ISSUED', 'PAID', 'CANCELLED')",
+                  "name": "purchaseInvoice_status_check_41b49830",
                   "prefix": "purchaseInvoice_status_check"
                 }
               ],
@@ -1516,7 +1515,7 @@
                 },
                 "status": {
                   "codecId": "pg/text@1",
-                  "default": { "kind": "literal", "value": "DRAFT" },
+                  "default": { "kind": "literal", "value": "ISSUED" },
                   "nativeType": "text",
                   "nullable": false,
                   "valueSet": {
@@ -1730,8 +1729,8 @@
                   "prefix": "salesInvoice_currency_check"
                 },
                 {
-                  "expression": "\"status\" IN ('DRAFT', 'ISSUED', 'PAID', 'CANCELLED')",
-                  "name": "salesInvoice_status_check_6cdc860a",
+                  "expression": "\"status\" IN ('ISSUED', 'PAID', 'CANCELLED')",
+                  "name": "salesInvoice_status_check_41b49830",
                   "prefix": "salesInvoice_status_check"
                 }
               ],
@@ -1800,7 +1799,7 @@
                 },
                 "status": {
                   "codecId": "pg/text@1",
-                  "default": { "kind": "literal", "value": "DRAFT" },
+                  "default": { "kind": "literal", "value": "ISSUED" },
                   "nativeType": "text",
                   "nullable": false,
                   "valueSet": {
@@ -2458,7 +2457,7 @@
             "Currency": { "kind": "valueSet", "values": ["USD", "EUR", "AZN"] },
             "InvoiceStatus": {
               "kind": "valueSet",
-              "values": ["DRAFT", "ISSUED", "PAID", "CANCELLED"]
+              "values": ["ISSUED", "PAID", "CANCELLED"]
             },
             "StockMovementType": {
               "kind": "valueSet",
@@ -2470,7 +2469,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2bbbc256029c91edbf064bf33cf41e5f201ecbeee1bc5b3861d203a1d2f179b1"
+    "storageHash": "77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4"
   },
   "target": "postgres",
   "targetFamily": "sql"

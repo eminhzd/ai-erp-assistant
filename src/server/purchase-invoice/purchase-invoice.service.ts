@@ -13,23 +13,23 @@ import {
 
 import { ValidationError, NotFoundError } from '@/lib/errors';
 
-import { getCustomerById } from '../customers/customer.service';
+import { getSupplierById } from '../suppliers/supplier.service';
 import { getWarehouseById } from '../warehouses/warehouse.service';
 import { getProductById } from '../products/product.service';
 
-import { createSalesInvoiceItemInTransaction } from '../sales-invoice-items/sales-invoice-items.service';
+import { createPurchaseInvoiceItemInTransaction } from '../purchase-invoice-items/purchase-invoice-items.service';
 
 import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
 
-export type SalesInvoiceItemInput = {
+export type PurchaseInvoiceItemInput = {
   productId: number;
   quantity: string;
   unitPrice: string;
 };
 
-export type SalesInvoiceCreateInput = {
+export type PurchaseInvoiceCreateInput = {
   companyId: number;
-  customerId: number;
+  supplierId: number;
   warehouseId: number;
   invoiceNumber: string;
   currency: 'USD' | 'EUR' | 'AZN';
@@ -38,10 +38,10 @@ export type SalesInvoiceCreateInput = {
   issueDate?: Date;
   dueDate?: Date;
   notes?: string;
-  items: SalesInvoiceItemInput[];
+  items: PurchaseInvoiceItemInput[];
 };
 
-export type SalesInvoiceUpdateInput = {
+export type PurchaseInvoiceUpdateInput = {
   status?: 'PAID' | 'CANCELLED';
 };
 
@@ -55,17 +55,18 @@ function calculateSubtotal(
 
   for (const item of items) {
     const lineTotal = multiplyDecimal(item.quantity, item.unitPrice);
-
     subtotal = addDecimal(subtotal, lineTotal);
   }
 
   return subtotal;
 }
 
-export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
+export async function createPurchaseInvoice(
+  invoiceData: PurchaseInvoiceCreateInput,
+) {
   const {
     companyId,
-    customerId,
+    supplierId,
     warehouseId,
     items,
     discount = '0',
@@ -74,7 +75,9 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
   } = invoiceData;
 
   if (items.length === 0) {
-    throw new ValidationError('Sales invoice must contain at least one item');
+    throw new ValidationError(
+      'Purchase invoice must contain at least one item',
+    );
   }
 
   if (!isNonNegativeDecimal(discount)) {
@@ -85,10 +88,10 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
     throw new ValidationError('Tax cannot be negative');
   }
 
-  const customer = await getCustomerById(companyId, customerId);
+  const supplier = await getSupplierById(companyId, supplierId);
 
-  if (!customer) {
-    throw new NotFoundError('Customer not found or does not belong to company');
+  if (!supplier) {
+    throw new NotFoundError('Supplier not found or does not belong to company');
   }
 
   const warehouse = await getWarehouseById(companyId, warehouseId);
@@ -104,19 +107,19 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
   for (const item of items) {
     if (!isPositiveDecimal(item.quantity)) {
       throw new ValidationError(
-        'Sales invoice item quantity must be greater than zero',
+        'Purchase invoice item quantity must be greater than zero',
       );
     }
 
     if (!isNonNegativeDecimal(item.unitPrice)) {
       throw new ValidationError(
-        'Sales invoice item unit price cannot be negative',
+        'Purchase invoice item unit price cannot be negative',
       );
     }
 
     if (productIds.has(item.productId)) {
       throw new ValidationError(
-        `Product ${item.productId} cannot appear more than once in a sales invoice`,
+        `Product ${item.productId} cannot appear more than once in a purchase invoice`,
       );
     }
 
@@ -138,14 +141,13 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
   }
 
   const subtotalAfterDiscount = subtractDecimal(subtotal, discount);
-
   const total = addDecimal(subtotalAfterDiscount, tax);
 
   return db.transaction(async (tx: DbClient) => {
-    const invoice = await tx.orm.public.SalesInvoice.create({
+    const invoice = await tx.orm.public.PurchaseInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,
-      customerId,
+      supplierId,
       warehouseId,
       status: 'ISSUED',
       subtotal,
@@ -157,7 +159,7 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
     for (const item of items) {
       const lineTotal = multiplyDecimal(item.quantity, item.unitPrice);
 
-      await createSalesInvoiceItemInTransaction(
+      await createPurchaseInvoiceItemInTransaction(
         companyId,
         {
           invoiceId: invoice.id,
@@ -174,9 +176,9 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
           companyId,
           warehouseId,
           productId: item.productId,
-          type: 'SALE',
+          type: 'PURCHASE',
           quantity: item.quantity,
-          salesInvoiceId: invoice.id,
+          purchaseInvoiceId: invoice.id,
         },
         tx,
       );
@@ -186,49 +188,49 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
   });
 }
 
-export async function getSalesInvoicesByCompanyId(companyId: number) {
-  return db.orm.public.SalesInvoice.where({
+export async function getPurchaseInvoicesByCompanyId(companyId: number) {
+  return db.orm.public.PurchaseInvoice.where({
     companyId,
   }).all();
 }
 
-export async function getSalesInvoiceById(companyId: number, id: number) {
-  return db.orm.public.SalesInvoice.where({
+export async function getPurchaseInvoiceById(companyId: number, id: number) {
+  return db.orm.public.PurchaseInvoice.where({
     companyId,
     id,
   }).first();
 }
 
-export async function updateSalesInvoice(
+export async function updatePurchaseInvoice(
   companyId: number,
   id: number,
-  invoiceData: SalesInvoiceUpdateInput,
+  invoiceData: PurchaseInvoiceUpdateInput,
 ) {
-  const invoice = await getSalesInvoiceById(companyId, id);
+  const invoice = await getPurchaseInvoiceById(companyId, id);
 
   if (!invoice) {
     return null;
   }
 
   if (invoice.status === 'CANCELLED') {
-    throw new ValidationError('Cancelled sales invoice cannot be modified');
+    throw new ValidationError('Cancelled purchase invoice cannot be modified');
   }
 
   if (invoice.status === 'PAID') {
-    throw new ValidationError('Paid sales invoice cannot be modified');
+    throw new ValidationError('Paid purchase invoice cannot be modified');
   }
 
   if (invoiceData.status === 'CANCELLED') {
     throw new ValidationError(
-      'Sales invoice cancellation is not supported yet',
+      'Purchase invoice cancellation is not supported yet',
     );
   }
 
   if (invoiceData.status !== 'PAID') {
-    throw new ValidationError('Sales invoice can only be marked as paid');
+    throw new ValidationError('Purchase invoice can only be marked as paid');
   }
 
-  return db.orm.public.SalesInvoice.where({
+  return db.orm.public.PurchaseInvoice.where({
     companyId,
     id,
   }).update({

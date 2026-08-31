@@ -30,7 +30,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2bbbc256029c91edbf064bf33cf41e5f201ecbeee1bc5b3861d203a1d2f179b1'>;
+  StorageHashBase<'77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4'>;
 export type ExecutionHash =
   ExecutionHashBase<'97571ebd149d8ff650c6066749282e6da3795826c0b2942f4affb822f6cd65eb'>;
 export type ProfileHash =
@@ -537,7 +537,7 @@ export type FieldOutputTypes = {
       readonly supplierId: CodecTypes['pg/int4@1']['output'];
       readonly warehouseId: CodecTypes['pg/int4@1']['output'];
       readonly invoiceNumber: CodecTypes['pg/text@1']['output'];
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly currency: 'USD' | 'EUR' | 'AZN';
       readonly subtotal: CodecTypes['pg/numeric@1']['output'];
       readonly discount: CodecTypes['pg/numeric@1']['output'];
@@ -565,7 +565,7 @@ export type FieldOutputTypes = {
       readonly customerId: CodecTypes['pg/int4@1']['output'];
       readonly warehouseId: CodecTypes['pg/int4@1']['output'];
       readonly invoiceNumber: CodecTypes['pg/text@1']['output'];
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly currency: 'USD' | 'EUR' | 'AZN';
       readonly subtotal: CodecTypes['pg/numeric@1']['output'];
       readonly discount: CodecTypes['pg/numeric@1']['output'];
@@ -674,7 +674,7 @@ export type FieldInputTypes = {
       readonly supplierId: CodecTypes['pg/int4@1']['input'];
       readonly warehouseId: CodecTypes['pg/int4@1']['input'];
       readonly invoiceNumber: CodecTypes['pg/text@1']['input'];
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly currency: 'USD' | 'EUR' | 'AZN';
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly discount: CodecTypes['pg/numeric@1']['input'];
@@ -702,7 +702,7 @@ export type FieldInputTypes = {
       readonly customerId: CodecTypes['pg/int4@1']['input'];
       readonly warehouseId: CodecTypes['pg/int4@1']['input'];
       readonly invoiceNumber: CodecTypes['pg/text@1']['input'];
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly currency: 'USD' | 'EUR' | 'AZN';
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly discount: CodecTypes['pg/numeric@1']['input'];
@@ -815,7 +815,7 @@ export type StorageColumnTypes = {
       readonly invoiceNumber: CodecTypes['pg/text@1']['output'];
       readonly issueDate: CodecTypes['pg/timestamptz@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly subtotal: CodecTypes['pg/numeric@1']['output'];
       readonly supplierId: CodecTypes['pg/int4@1']['output'];
       readonly tax: CodecTypes['pg/numeric@1']['output'];
@@ -844,7 +844,7 @@ export type StorageColumnTypes = {
       readonly invoiceNumber: CodecTypes['pg/text@1']['output'];
       readonly issueDate: CodecTypes['pg/timestamptz@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly subtotal: CodecTypes['pg/numeric@1']['output'];
       readonly tax: CodecTypes['pg/numeric@1']['output'];
       readonly total: CodecTypes['pg/numeric@1']['output'];
@@ -952,7 +952,7 @@ export type StorageColumnInputTypes = {
       readonly invoiceNumber: CodecTypes['pg/text@1']['input'];
       readonly issueDate: CodecTypes['pg/timestamptz@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly supplierId: CodecTypes['pg/int4@1']['input'];
       readonly tax: CodecTypes['pg/numeric@1']['input'];
@@ -981,7 +981,7 @@ export type StorageColumnInputTypes = {
       readonly invoiceNumber: CodecTypes['pg/text@1']['input'];
       readonly issueDate: CodecTypes['pg/timestamptz@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
-      readonly status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
+      readonly status: 'ISSUED' | 'PAID' | 'CANCELLED';
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly tax: CodecTypes['pg/numeric@1']['input'];
       readonly total: CodecTypes['pg/numeric@1']['input'];
@@ -1399,7 +1399,7 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/text@1', 'DRAFT'>;
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'ISSUED'>;
                   };
                 };
                 readonly currency: {
@@ -1671,7 +1671,7 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/text@1', 'DRAFT'>;
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'ISSUED'>;
                   };
                 };
                 readonly currency: {
@@ -2378,12 +2378,7 @@ type ContractBase = Omit<
             };
             readonly InvoiceStatus: {
               readonly kind: 'valueSet';
-              readonly values: readonly [
-                'DRAFT',
-                'ISSUED',
-                'PAID',
-                'CANCELLED',
-              ];
+              readonly values: readonly ['ISSUED', 'PAID', 'CANCELLED'];
             };
             readonly StockMovementType: {
               readonly kind: 'valueSet';
@@ -3954,7 +3949,6 @@ type ContractBase = Omit<
           readonly InvoiceStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
-              { readonly name: 'DRAFT'; readonly value: 'DRAFT' },
               { readonly name: 'ISSUED'; readonly value: 'ISSUED' },
               { readonly name: 'PAID'; readonly value: 'PAID' },
               { readonly name: 'CANCELLED'; readonly value: 'CANCELLED' },

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/1949ef7e5e99ed6dcb8154d01e9480b7c9cedcf96a3f75685a4f79b0610efea6/contract';
-import endContract from '../../snapshots/1949ef7e5e99ed6dcb8154d01e9480b7c9cedcf96a3f75685a4f79b0610efea6/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4/contract';
+import endContract from '../../snapshots/77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -188,7 +188,7 @@ export default class M extends Migration<never, End> {
           col('notes', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('status', 'text', {
             notNull: true,
-            default: lit('DRAFT'),
+            default: lit('ISSUED'),
             codecRef: { codecId: 'pg/text@1' },
           }),
           col('subtotal', 'numeric', {
@@ -224,8 +224,8 @@ export default class M extends Migration<never, End> {
             "\"currency\" IN ('USD', 'EUR', 'AZN')",
           ),
           checkExpression(
-            'purchaseInvoice_status_check_6cdc860a',
-            "\"status\" IN ('DRAFT', 'ISSUED', 'PAID', 'CANCELLED')",
+            'purchaseInvoice_status_check_41b49830',
+            "\"status\" IN ('ISSUED', 'PAID', 'CANCELLED')",
           ),
         ],
       }),
@@ -312,7 +312,7 @@ export default class M extends Migration<never, End> {
           col('notes', 'text', { codecRef: { codecId: 'pg/text@1' } }),
           col('status', 'text', {
             notNull: true,
-            default: lit('DRAFT'),
+            default: lit('ISSUED'),
             codecRef: { codecId: 'pg/text@1' },
           }),
           col('subtotal', 'numeric', {
@@ -344,8 +344,8 @@ export default class M extends Migration<never, End> {
             "\"currency\" IN ('USD', 'EUR', 'AZN')",
           ),
           checkExpression(
-            'salesInvoice_status_check_6cdc860a',
-            "\"status\" IN ('DRAFT', 'ISSUED', 'PAID', 'CANCELLED')",
+            'salesInvoice_status_check_41b49830',
+            "\"status\" IN ('ISSUED', 'PAID', 'CANCELLED')",
           ),
         ],
       }),
@@ -576,8 +576,8 @@ export default class M extends Migration<never, End> {
       this.addUnique({
         schema: 'public',
         table: 'warehouseStock',
-        constraint: 'warehouseStock_warehouseId_productId_key',
-        columns: ['warehouseId', 'productId'],
+        constraint: 'warehouseStock_companyId_warehouseId_productId_key',
+        columns: ['companyId', 'warehouseId', 'productId'],
       }),
       this.createIndex({
         schema: 'public',

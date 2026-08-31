@@ -144,7 +144,7 @@
     "execute": [
       {
         "description": "create table \"purchaseInvoice\"",
-        "sql": "CREATE TABLE \"public\".\"purchaseInvoice\" (\n  \"companyId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text NOT NULL,\n  \"discount\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"dueDate\" timestamptz,\n  \"id\" SERIAL NOT NULL,\n  \"invoiceNumber\" text NOT NULL,\n  \"issueDate\" timestamptz,\n  \"notes\" text,\n  \"status\" text DEFAULT 'DRAFT' NOT NULL,\n  \"subtotal\" numeric NOT NULL,\n  \"supplierId\" int4 NOT NULL,\n  \"tax\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"total\" numeric NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"warehouseId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"purchaseInvoice_currency_check_645607a3\" CHECK (\"currency\" IN ('USD', 'EUR', 'AZN')),\n  CONSTRAINT \"purchaseInvoice_status_check_6cdc860a\" CHECK (\"status\" IN ('DRAFT', 'ISSUED', 'PAID', 'CANCELLED'))\n)",
+        "sql": "CREATE TABLE \"public\".\"purchaseInvoice\" (\n  \"companyId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text NOT NULL,\n  \"discount\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"dueDate\" timestamptz,\n  \"id\" SERIAL NOT NULL,\n  \"invoiceNumber\" text NOT NULL,\n  \"issueDate\" timestamptz,\n  \"notes\" text,\n  \"status\" text DEFAULT 'ISSUED' NOT NULL,\n  \"subtotal\" numeric NOT NULL,\n  \"supplierId\" int4 NOT NULL,\n  \"tax\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"total\" numeric NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"warehouseId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"purchaseInvoice_currency_check_645607a3\" CHECK (\"currency\" IN ('USD', 'EUR', 'AZN')),\n  CONSTRAINT \"purchaseInvoice_status_check_41b49830\" CHECK (\"status\" IN ('ISSUED', 'PAID', 'CANCELLED'))\n)",
         "params": []
       }
     ],
@@ -214,7 +214,7 @@
     "execute": [
       {
         "description": "create table \"salesInvoice\"",
-        "sql": "CREATE TABLE \"public\".\"salesInvoice\" (\n  \"companyId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text NOT NULL,\n  \"customerId\" int4 NOT NULL,\n  \"discount\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"dueDate\" timestamptz,\n  \"id\" SERIAL NOT NULL,\n  \"invoiceNumber\" text NOT NULL,\n  \"issueDate\" timestamptz,\n  \"notes\" text,\n  \"status\" text DEFAULT 'DRAFT' NOT NULL,\n  \"subtotal\" numeric NOT NULL,\n  \"tax\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"total\" numeric NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"warehouseId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"salesInvoice_currency_check_645607a3\" CHECK (\"currency\" IN ('USD', 'EUR', 'AZN')),\n  CONSTRAINT \"salesInvoice_status_check_6cdc860a\" CHECK (\"status\" IN ('DRAFT', 'ISSUED', 'PAID', 'CANCELLED'))\n)",
+        "sql": "CREATE TABLE \"public\".\"salesInvoice\" (\n  \"companyId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currency\" text NOT NULL,\n  \"customerId\" int4 NOT NULL,\n  \"discount\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"dueDate\" timestamptz,\n  \"id\" SERIAL NOT NULL,\n  \"invoiceNumber\" text NOT NULL,\n  \"issueDate\" timestamptz,\n  \"notes\" text,\n  \"status\" text DEFAULT 'ISSUED' NOT NULL,\n  \"subtotal\" numeric NOT NULL,\n  \"tax\" numeric DEFAULT '0'::numeric NOT NULL,\n  \"total\" numeric NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"warehouseId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"salesInvoice_currency_check_645607a3\" CHECK (\"currency\" IN ('USD', 'EUR', 'AZN')),\n  CONSTRAINT \"salesInvoice_status_check_41b49830\" CHECK (\"status\" IN ('ISSUED', 'PAID', 'CANCELLED'))\n)",
         "params": []
       }
     ],
@@ -654,24 +654,24 @@
     ]
   },
   {
-    "id": "unique.warehouseStock.warehouseStock_warehouseId_productId_key",
-    "label": "Add unique constraint on \"warehouseStock\" (warehouseId, productId)",
+    "id": "unique.warehouseStock.warehouseStock_companyId_warehouseId_productId_key",
+    "label": "Add unique constraint on \"warehouseStock\" (companyId, warehouseId, productId)",
     "operationClass": "additive",
     "target": {
       "id": "postgres",
       "details": {
         "schema": "public",
         "objectType": "unique",
-        "name": "warehouseStock_warehouseId_productId_key",
+        "name": "warehouseStock_companyId_warehouseId_productId_key",
         "table": "warehouseStock"
       }
     },
     "precheck": [
       {
-        "description": "ensure constraint \"warehouseStock_warehouseId_productId_key\" does not exist",
+        "description": "ensure constraint \"warehouseStock_companyId_warehouseId_productId_key\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
         "params": [
-          "warehouseStock_warehouseId_productId_key",
+          "warehouseStock_companyId_warehouseId_productId_key",
           "public",
           "\"public\".\"warehouseStock\""
         ]
@@ -679,16 +679,16 @@
     ],
     "execute": [
       {
-        "description": "add unique constraint \"warehouseStock_warehouseId_productId_key\"",
-        "sql": "ALTER TABLE \"public\".\"warehouseStock\" ADD CONSTRAINT \"warehouseStock_warehouseId_productId_key\" UNIQUE (\"warehouseId\", \"productId\")"
+        "description": "add unique constraint \"warehouseStock_companyId_warehouseId_productId_key\"",
+        "sql": "ALTER TABLE \"public\".\"warehouseStock\" ADD CONSTRAINT \"warehouseStock_companyId_warehouseId_productId_key\" UNIQUE (\"companyId\", \"warehouseId\", \"productId\")"
       }
     ],
     "postcheck": [
       {
-        "description": "verify constraint \"warehouseStock_warehouseId_productId_key\" exists",
+        "description": "verify constraint \"warehouseStock_companyId_warehouseId_productId_key\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
         "params": [
-          "warehouseStock_warehouseId_productId_key",
+          "warehouseStock_companyId_warehouseId_productId_key",
           "public",
           "\"public\".\"warehouseStock\""
         ]

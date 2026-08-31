@@ -1,4 +1,5 @@
 import { db } from '@/prisma/db';
+import type { DbClient } from '@/prisma/types';
 
 import {
   addDecimal,
@@ -7,7 +8,6 @@ import {
   subtractDecimal,
 } from '@/lib/decimal';
 
-import type { DbClient } from '@/prisma/types';
 import { ConflictError, ValidationError, NotFoundError } from '@/lib/errors';
 
 export type WarehouseStockCreateInput = {
@@ -30,6 +30,12 @@ export async function createWarehouseStock(
 ) {
   const { productId, quantity } = warehouseStockData;
 
+  if (!isPositiveDecimal(quantity)) {
+    throw new ValidationError(
+      'Warehouse stock quantity must be greater than zero',
+    );
+  }
+
   const existing = await getWarehouseStock(
     companyId,
     warehouseId,
@@ -39,6 +45,26 @@ export async function createWarehouseStock(
 
   if (existing) {
     throw new ConflictError('Warehouse stock already exists');
+  }
+
+  const warehouse = await client.orm.public.Warehouse.where({
+    companyId,
+    id: warehouseId,
+  }).first();
+
+  if (!warehouse) {
+    throw new NotFoundError(
+      'Warehouse not found or does not belong to company',
+    );
+  }
+
+  const product = await client.orm.public.Product.where({
+    companyId,
+    id: productId,
+  }).first();
+
+  if (!product) {
+    throw new NotFoundError('Product not found or does not belong to company');
   }
 
   return client.orm.public.WarehouseStock.create({
@@ -99,12 +125,14 @@ export async function increaseWarehouseStock(
     );
   }
 
+  const newQuantity = addDecimal(currentStock.quantity, quantity);
+
   return client.orm.public.WarehouseStock.where({
     companyId,
     warehouseId,
     productId,
   }).update({
-    quantity: addDecimal(currentStock.quantity, quantity),
+    quantity: newQuantity,
   });
 }
 
@@ -131,11 +159,13 @@ export async function decreaseWarehouseStock(
     throw new ConflictError('Insufficient stock quantity');
   }
 
+  const newQuantity = subtractDecimal(currentStock.quantity, quantity);
+
   return client.orm.public.WarehouseStock.where({
     companyId,
     warehouseId,
     productId,
   }).update({
-    quantity: subtractDecimal(currentStock.quantity, quantity),
+    quantity: newQuantity,
   });
 }

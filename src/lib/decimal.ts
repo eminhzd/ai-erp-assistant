@@ -30,9 +30,38 @@ export function compareDecimal(
 }
 
 export function isPositiveDecimal(value: string | Decimal): boolean {
-  return new Decimal(value).greaterThan(0);
+  try {
+    const decimal = new Decimal(value);
+
+    return decimal.isFinite() && decimal.greaterThan(0);
+  } catch {
+    return false;
+  }
 }
 
 export function isZeroDecimal(value: string | Decimal): boolean {
-  return new Decimal(value).isZero();
+  try {
+    const decimal = new Decimal(value);
+
+    return decimal.isFinite() && decimal.isZero();
+  } catch {
+    return false;
+  }
+}
+
+export function isNonNegativeDecimal(value: string | Decimal): boolean {
+  try {
+    const decimal = new Decimal(value);
+
+    return decimal.isFinite() && decimal.greaterThanOrEqualTo(0);
+  } catch {
+    return false;
+  }
+}
+
+export function multiplyDecimal(
+  valueA: string | Decimal,
+  valueB: string | Decimal,
+): string {
+  return new Decimal(valueA).mul(valueB).toString();
 }

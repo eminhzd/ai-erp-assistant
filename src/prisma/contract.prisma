@@ -3,7 +3,6 @@
 // use prisma-next
 
 enum InvoiceStatus {
-  DRAFT
   ISSUED
   PAID
   CANCELLED
@@ -172,7 +171,7 @@ model SalesInvoice {
   customerId    Int
   warehouseId   Int
   invoiceNumber String
-  status        InvoiceStatus @default(DRAFT)
+  status        InvoiceStatus @default(ISSUED)
   currency      Currency
 
   subtotal Decimal
@@ -226,7 +225,7 @@ model PurchaseInvoice {
   supplierId    Int
   warehouseId   Int
   invoiceNumber String
-  status        InvoiceStatus @default(DRAFT)
+  status        InvoiceStatus @default(ISSUED)
   currency      Currency
 
   subtotal Decimal

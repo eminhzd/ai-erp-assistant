@@ -17,6 +17,41 @@
     "postcheck": []
   },
   {
+    "id": "table.chats",
+    "label": "Create table \"chats\"",
+    "summary": "Creates table \"chats\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "chats"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"chats\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"chats\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"chats\"",
+        "sql": "CREATE TABLE \"public\".\"chats\" (\n  \"companyId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"title\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"chats\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"chats\""]
+      }
+    ]
+  },
+  {
     "id": "table.company",
     "label": "Create table \"company\"",
     "summary": "Creates table \"company\"",
@@ -83,6 +118,41 @@
         "description": "verify table \"customer\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
         "params": ["\"public\".\"customer\""]
+      }
+    ]
+  },
+  {
+    "id": "table.messages",
+    "label": "Create table \"messages\"",
+    "summary": "Creates table \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"messages\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"messages\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"messages\"",
+        "sql": "CREATE TABLE \"public\".\"messages\" (\n  \"chatId\" int4 NOT NULL,\n  \"companyId\" int4 NOT NULL,\n  \"content\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"role\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"messages\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"messages\""]
       }
     ]
   },
@@ -696,6 +766,41 @@
     ]
   },
   {
+    "id": "index.chats.chats_companyId_idx_33acc5ed",
+    "label": "Create index \"chats_companyId_idx_33acc5ed\" on \"chats\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "chats_companyId_idx_33acc5ed",
+        "table": "chats"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"chats_companyId_idx_33acc5ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"chats_companyId_idx_33acc5ed\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"chats_companyId_idx_33acc5ed\"",
+        "sql": "CREATE INDEX \"chats_companyId_idx_33acc5ed\" ON \"public\".\"chats\" (\"companyId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"chats_companyId_idx_33acc5ed\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"chats_companyId_idx_33acc5ed\""]
+      }
+    ]
+  },
+  {
     "id": "index.company.company_name_idx_ce87e6ba",
     "label": "Create index \"company_name_idx_ce87e6ba\" on \"company\"",
     "operationClass": "additive",
@@ -867,6 +972,111 @@
         "description": "verify index \"customer_companyId_taxId_idx_ce946cc0\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
         "params": ["\"public\".\"customer_companyId_taxId_idx_ce946cc0\""]
+      }
+    ]
+  },
+  {
+    "id": "index.messages.messages_chatId_idx_53965835",
+    "label": "Create index \"messages_chatId_idx_53965835\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "messages_chatId_idx_53965835",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"messages_chatId_idx_53965835\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"messages_chatId_idx_53965835\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"messages_chatId_idx_53965835\"",
+        "sql": "CREATE INDEX \"messages_chatId_idx_53965835\" ON \"public\".\"messages\" (\"chatId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"messages_chatId_idx_53965835\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"messages_chatId_idx_53965835\""]
+      }
+    ]
+  },
+  {
+    "id": "index.messages.messages_companyId_chatId_idx_0ac66d6f",
+    "label": "Create index \"messages_companyId_chatId_idx_0ac66d6f\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "messages_companyId_chatId_idx_0ac66d6f",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"messages_companyId_chatId_idx_0ac66d6f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"messages_companyId_chatId_idx_0ac66d6f\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"messages_companyId_chatId_idx_0ac66d6f\"",
+        "sql": "CREATE INDEX \"messages_companyId_chatId_idx_0ac66d6f\" ON \"public\".\"messages\" (\"companyId\", \"chatId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"messages_companyId_chatId_idx_0ac66d6f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"messages_companyId_chatId_idx_0ac66d6f\""]
+      }
+    ]
+  },
+  {
+    "id": "index.messages.messages_companyId_idx_33acc5ed",
+    "label": "Create index \"messages_companyId_idx_33acc5ed\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "messages_companyId_idx_33acc5ed",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"messages_companyId_idx_33acc5ed\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"messages_companyId_idx_33acc5ed\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"messages_companyId_idx_33acc5ed\"",
+        "sql": "CREATE INDEX \"messages_companyId_idx_33acc5ed\" ON \"public\".\"messages\" (\"companyId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"messages_companyId_idx_33acc5ed\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": ["\"public\".\"messages_companyId_idx_33acc5ed\""]
       }
     ]
   },
@@ -2050,6 +2260,40 @@
     ]
   },
   {
+    "id": "foreignKey.chats.chats_companyId_fkey",
+    "label": "Add foreign key \"chats_companyId_fkey\" on \"chats\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "chats_companyId_fkey",
+        "table": "chats"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"chats_companyId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["chats_companyId_fkey", "public", "\"public\".\"chats\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"chats_companyId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"chats\"\nADD CONSTRAINT \"chats_companyId_fkey\"\nFOREIGN KEY (\"companyId\")\nREFERENCES \"public\".\"company\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"chats_companyId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["chats_companyId_fkey", "public", "\"public\".\"chats\""]
+      }
+    ]
+  },
+  {
     "id": "foreignKey.customer.customer_companyId_fkey",
     "label": "Add foreign key \"customer_companyId_fkey\" on \"customer\"",
     "operationClass": "additive",
@@ -2088,6 +2332,82 @@
           "public",
           "\"public\".\"customer\""
         ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.messages.messages_companyId_fkey",
+    "label": "Add foreign key \"messages_companyId_fkey\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "messages_companyId_fkey",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"messages_companyId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "messages_companyId_fkey",
+          "public",
+          "\"public\".\"messages\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"messages_companyId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"messages\"\nADD CONSTRAINT \"messages_companyId_fkey\"\nFOREIGN KEY (\"companyId\")\nREFERENCES \"public\".\"company\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"messages_companyId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "messages_companyId_fkey",
+          "public",
+          "\"public\".\"messages\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.messages.messages_chatId_fkey",
+    "label": "Add foreign key \"messages_chatId_fkey\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "messages_chatId_fkey",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"messages_chatId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["messages_chatId_fkey", "public", "\"public\".\"messages\""]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"messages_chatId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"messages\"\nADD CONSTRAINT \"messages_chatId_fkey\"\nFOREIGN KEY (\"chatId\")\nREFERENCES \"public\".\"chats\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"messages_chatId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": ["messages_chatId_fkey", "public", "\"public\".\"messages\""]
       }
     ]
   },

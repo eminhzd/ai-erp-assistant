@@ -207,7 +207,9 @@ export async function updateSalesInvoice(
   const invoice = await getSalesInvoiceById(companyId, id);
 
   if (!invoice) {
-    return null;
+    throw new NotFoundError(
+      'Sales invoice not found or does not belong to company',
+    );
   }
 
   if (invoice.status === 'CANCELLED') {

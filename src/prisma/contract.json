@@ -4,12 +4,20 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "chats": {
+      "model": "Chat",
+      "namespace": "public"
+    },
     "company": {
       "model": "Company",
       "namespace": "public"
     },
     "customer": {
       "model": "Customer",
+      "namespace": "public"
+    },
+    "messages": {
+      "model": "Message",
       "namespace": "public"
     },
     "product": {
@@ -110,6 +118,90 @@
           }
         },
         "models": {
+          "Chat": {
+            "fields": {
+              "companyId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "company": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": ["companyId"],
+                  "targetFields": ["id"]
+                },
+                "to": {
+                  "model": "Company",
+                  "namespace": "public"
+                }
+              },
+              "messages": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": ["id"],
+                  "targetFields": ["chatId"]
+                },
+                "to": {
+                  "model": "Message",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "companyId": {
+                  "column": "companyId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "chats"
+            }
+          },
           "Company": {
             "fields": {
               "address": {
@@ -437,6 +529,100 @@
               },
               "namespaceId": "public",
               "table": "customer"
+            }
+          },
+          "Message": {
+            "fields": {
+              "chatId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "companyId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "content": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "role": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "chat": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": ["chatId"],
+                  "targetFields": ["id"]
+                },
+                "to": {
+                  "model": "Chat",
+                  "namespace": "public"
+                }
+              },
+              "company": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": ["companyId"],
+                  "targetFields": ["id"]
+                },
+                "to": {
+                  "model": "Company",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "chatId": {
+                  "column": "chatId"
+                },
+                "companyId": {
+                  "column": "companyId"
+                },
+                "content": {
+                  "column": "content"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "role": {
+                  "column": "role"
+                }
+              },
+              "namespaceId": "public",
+              "table": "messages"
             }
           },
           "Product": {
@@ -1870,6 +2056,69 @@
       "public": {
         "entries": {
           "table": {
+            "chats": {
+              "columns": {
+                "companyId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": ["companyId"],
+                    "namespaceId": "public",
+                    "tableName": "chats"
+                  },
+                  "target": {
+                    "columns": ["id"],
+                    "namespaceId": "public",
+                    "tableName": "company"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": ["companyId"],
+                  "name": "chats_companyId_idx_33acc5ed",
+                  "prefix": "chats_companyId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": ["id"]
+              },
+              "uniques": []
+            },
             "company": {
               "checks": [
                 {
@@ -2079,6 +2328,99 @@
                   "columns": ["companyId", "name"]
                 }
               ]
+            },
+            "messages": {
+              "columns": {
+                "chatId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "companyId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "content": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "role": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": ["companyId"],
+                    "namespaceId": "public",
+                    "tableName": "messages"
+                  },
+                  "target": {
+                    "columns": ["id"],
+                    "namespaceId": "public",
+                    "tableName": "company"
+                  }
+                },
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": ["chatId"],
+                    "namespaceId": "public",
+                    "tableName": "messages"
+                  },
+                  "target": {
+                    "columns": ["id"],
+                    "namespaceId": "public",
+                    "tableName": "chats"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": ["chatId"],
+                  "name": "messages_chatId_idx_53965835",
+                  "prefix": "messages_chatId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": ["companyId", "chatId"],
+                  "name": "messages_companyId_chatId_idx_0ac66d6f",
+                  "prefix": "messages_companyId_chatId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": ["companyId"],
+                  "name": "messages_companyId_idx_33acc5ed",
+                  "prefix": "messages_companyId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": ["id"]
+              },
+              "uniques": []
             },
             "product": {
               "columns": {
@@ -3306,12 +3648,27 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4"
+    "storageHash": "0dc7353e539a0d3f32952224602ee003d68b1a94fb00bde902247b8972556fba"
   },
   "execution": {
-    "executionHash": "97571ebd149d8ff650c6066749282e6da3795826c0b2942f4affb822f6cd65eb",
+    "executionHash": "c4669c090eb55db8a6e77f6e5f8878b4a212e5e9f190d1b78e5e8ef3f562b6d7",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "chats"
+          }
+        },
         {
           "onCreate": {
             "id": "timestampNow",

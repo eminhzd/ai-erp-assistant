@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4/contract';
-import endContract from '../../snapshots/77694f3a79c6a0d4ed1ce6d863adf98844ffe512734b985e4e47402cd120b0d4/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/0dc7353e539a0d3f32952224602ee003d68b1a94fb00bde902247b8972556fba/contract';
+import endContract from '../../snapshots/0dc7353e539a0d3f32952224602ee003d68b1a94fb00bde902247b8972556fba/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -17,6 +17,31 @@ export default class M extends Migration<never, End> {
   override get operations() {
     return [
       this.createSchema({ schema: 'public' }),
+      this.createTable({
+        schema: 'public',
+        table: 'chats',
+        columns: [
+          col('companyId', 'int4', {
+            notNull: true,
+            codecRef: { codecId: 'pg/int4@1' },
+          }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz@1' },
+          }),
+          col('id', 'SERIAL', {
+            notNull: true,
+            codecRef: { codecId: 'pg/int4@1' },
+          }),
+          col('title', 'text', { codecRef: { codecId: 'pg/text@1' } }),
+          col('updatedAt', 'timestamptz', {
+            notNull: true,
+            codecRef: { codecId: 'pg/timestamptz@1' },
+          }),
+        ],
+        constraints: [primaryKey(['id'])],
+      }),
       this.createTable({
         schema: 'public',
         table: 'company',
@@ -94,6 +119,38 @@ export default class M extends Migration<never, End> {
           col('updatedAt', 'timestamptz', {
             notNull: true,
             codecRef: { codecId: 'pg/timestamptz@1' },
+          }),
+        ],
+        constraints: [primaryKey(['id'])],
+      }),
+      this.createTable({
+        schema: 'public',
+        table: 'messages',
+        columns: [
+          col('chatId', 'int4', {
+            notNull: true,
+            codecRef: { codecId: 'pg/int4@1' },
+          }),
+          col('companyId', 'int4', {
+            notNull: true,
+            codecRef: { codecId: 'pg/int4@1' },
+          }),
+          col('content', 'text', {
+            notNull: true,
+            codecRef: { codecId: 'pg/text@1' },
+          }),
+          col('createdAt', 'timestamptz', {
+            notNull: true,
+            default: fn('now()'),
+            codecRef: { codecId: 'pg/timestamptz@1' },
+          }),
+          col('id', 'SERIAL', {
+            notNull: true,
+            codecRef: { codecId: 'pg/int4@1' },
+          }),
+          col('role', 'text', {
+            notNull: true,
+            codecRef: { codecId: 'pg/text@1' },
           }),
         ],
         constraints: [primaryKey(['id'])],
@@ -581,6 +638,12 @@ export default class M extends Migration<never, End> {
       }),
       this.createIndex({
         schema: 'public',
+        table: 'chats',
+        index: 'chats_companyId_idx_33acc5ed',
+        columns: ['companyId'],
+      }),
+      this.createIndex({
+        schema: 'public',
         table: 'company',
         index: 'company_name_idx_ce87e6ba',
         columns: ['name'],
@@ -608,6 +671,24 @@ export default class M extends Migration<never, End> {
         table: 'customer',
         index: 'customer_companyId_taxId_idx_ce946cc0',
         columns: ['companyId', 'taxId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'messages',
+        index: 'messages_chatId_idx_53965835',
+        columns: ['chatId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'messages',
+        index: 'messages_companyId_chatId_idx_0ac66d6f',
+        columns: ['companyId', 'chatId'],
+      }),
+      this.createIndex({
+        schema: 'public',
+        table: 'messages',
+        index: 'messages_companyId_idx_33acc5ed',
+        columns: ['companyId'],
       }),
       this.createIndex({
         schema: 'public',
@@ -809,11 +890,39 @@ export default class M extends Migration<never, End> {
       }),
       this.addForeignKey({
         schema: 'public',
+        table: 'chats',
+        foreignKey: {
+          name: 'chats_companyId_fkey',
+          columns: ['companyId'],
+          references: { schema: 'public', table: 'company', columns: ['id'] },
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
         table: 'customer',
         foreignKey: {
           name: 'customer_companyId_fkey',
           columns: ['companyId'],
           references: { schema: 'public', table: 'company', columns: ['id'] },
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
+        table: 'messages',
+        foreignKey: {
+          name: 'messages_companyId_fkey',
+          columns: ['companyId'],
+          references: { schema: 'public', table: 'company', columns: ['id'] },
+        },
+      }),
+      this.addForeignKey({
+        schema: 'public',
+        table: 'messages',
+        foreignKey: {
+          name: 'messages_chatId_fkey',
+          columns: ['chatId'],
+          references: { schema: 'public', table: 'chats', columns: ['id'] },
+          onDelete: 'cascade',
         },
       }),
       this.addForeignKey({

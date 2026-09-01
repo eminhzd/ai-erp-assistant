@@ -301,3 +301,34 @@ model StockMovement {
   @@index([purchaseInvoiceId])
   @@index([createdAt])
 }
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  title     String?
+
+  createdAt DateTime @default(now())
+  updatedAt temporal.updatedAt()
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  messages Message[]
+
+  @@index([companyId])
+  @@map("chats")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  chatId    Int
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  chat    Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, chatId])
+  @@map("messages")
+}

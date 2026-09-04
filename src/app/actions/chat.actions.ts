@@ -1,16 +1,53 @@
 'use server';
 
 import {
-  createChat,
+  createChatWithMessage,
   getChatById,
   getChats,
   deleteChat,
 } from '@/server/chat/chat.service';
 
-import type { ChatCreateInput } from '@/server/chat/chat.service';
+export type CreateChatWithMessageClientInput = {
+  title?: string;
+  content: string;
+};
 
-export async function createChatAction(chatData: ChatCreateInput) {
-  return createChat(chatData);
+type CreateChatWithMessageSuccess = {
+  data: Awaited<ReturnType<typeof createChatWithMessage>>;
+  success: true;
+};
+
+type CreateChatWithMessageError = {
+  data: null;
+  error: string;
+  success: false;
+};
+
+export async function createChatWithMessageAction(
+  chatData: CreateChatWithMessageClientInput,
+): Promise<CreateChatWithMessageSuccess | CreateChatWithMessageError> {
+  const data = {
+    ...chatData,
+    companyId: 1, // Assuming companyId is always 1 for this example
+  };
+
+  try {
+    const response = await createChatWithMessage(data);
+    const finalizedResponse: CreateChatWithMessageSuccess = {
+      data: response,
+      success: true,
+    };
+
+    return finalizedResponse;
+  } catch (error) {
+    console.error('Error creating chat:', error);
+
+    return {
+      data: null,
+      error: 'Failed to create chat',
+      success: false,
+    };
+  }
 }
 
 export async function getChatByIdAction(companyId: number, chatId: number) {

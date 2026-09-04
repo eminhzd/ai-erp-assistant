@@ -1,12 +1,28 @@
 import { db } from '@/prisma/db';
+import { DbClient } from '@/prisma/types';
 
-export type ChatCreateInput = {
-  title?: string;
+export type CreateChatWithMessageInput = {
   companyId: number;
+  title?: string;
+  content: string;
 };
 
-export async function createChat(chatData: ChatCreateInput) {
-  return db.orm.public.Chat.create(chatData);
+export async function createChatWithMessage(data: CreateChatWithMessageInput) {
+  return db.transaction(async (tx: DbClient) => {
+    const chat = await tx.orm.public.Chat.create({
+      companyId: data.companyId,
+      title: data.title,
+    });
+
+    await tx.orm.public.Message.create({
+      companyId: data.companyId,
+      chatId: chat.id,
+      role: 'user',
+      content: data.content,
+    });
+
+    return chat;
+  });
 }
 
 export async function getChatById(companyId: number, id: number) {

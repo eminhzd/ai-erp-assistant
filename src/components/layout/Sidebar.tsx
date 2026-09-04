@@ -1,6 +1,13 @@
 import { Button } from '@/components/ui/button';
 
-export function Sidebar() {
+type SidebarProps = {
+  chats: {
+    id: number;
+    title: string | null;
+  }[];
+};
+
+export function Sidebar({ chats }: SidebarProps) {
   return (
     <aside className="bg-background flex h-full w-64 shrink-0 flex-col border-r p-3">
       <div>
@@ -14,17 +21,15 @@ export function Sidebar() {
       <div className="mt-2 flex flex-1 flex-col">
         <h3 className="text-muted-foreground text-sm font-semibold">Chats</h3>
         <div className="mt-2 flex flex-col gap-2">
-          {['Invoice for ABC', 'Supplier discussion', 'Monthly report'].map(
-            (chat) => (
-              <Button
-                variant="secondary"
-                className="w-full rounded-lg px-3 text-left text-xs"
-                key={chat}
-              >
-                {chat}
-              </Button>
-            ),
-          )}
+          {chats.map((chat) => (
+            <Button
+              variant="secondary"
+              className="w-full rounded-lg px-3 text-left text-xs"
+              key={chat.id}
+            >
+              {chat.title || `Chat ${chat.id}`}
+            </Button>
+          ))}
         </div>
       </div>
       <div className="mt-auto flex flex-col items-center">

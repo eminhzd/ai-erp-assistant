@@ -21,8 +21,11 @@
     "contract:emit": "prisma-cli contract emit"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.64",
+    "@ai-sdk/react": "^4.0.96",
     "@base-ui/react": "^1.7.0",
     "@prisma/orm-postgres": "^8.0.0-rc.4",
+    "ai": "^7.0.93",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "decimal.js": "^10.6.0",

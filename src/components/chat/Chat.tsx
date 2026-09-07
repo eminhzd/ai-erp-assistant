@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import * as z from 'zod';
 import type { ChatUIMessage } from '@/types/chat';
 
-const MessageSchema = z.object({
+const messageSchema = z.object({
   content: z.string().trim().min(1).max(3000),
 });
 
@@ -55,7 +55,7 @@ export function Chat({
   const handleSendMessage = async () => {
     if (isLoading) return;
 
-    const result = MessageSchema.safeParse({
+    const result = messageSchema.safeParse({
       content: newMessage,
     });
 

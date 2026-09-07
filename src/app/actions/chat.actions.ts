@@ -1,5 +1,6 @@
 'use server';
 
+import { auth } from '@/auth';
 import {
   createChatWithMessage,
   getChatById,
@@ -26,9 +27,21 @@ type CreateChatWithMessageError = {
 export async function createChatWithMessageAction(
   chatData: CreateChatWithMessageClientInput,
 ): Promise<CreateChatWithMessageSuccess | CreateChatWithMessageError> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      data: null,
+      error: 'Unauthorized',
+      success: false,
+    };
+  }
+
+  const companyId = session.user.companyId;
+
   const data = {
     ...chatData,
-    companyId: 1, // Assuming companyId is always 1 for this example
+    companyId,
   };
 
   try {
@@ -50,14 +63,56 @@ export async function createChatWithMessageAction(
   }
 }
 
-export async function getChatByIdAction(companyId: number, chatId: number) {
+export async function getChatByIdAction(chatId: number) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      data: null,
+      error: 'Unauthorized',
+      success: false,
+    };
+  }
+
+  const companyId = session.user.companyId;
+
   return getChatById(companyId, chatId);
 }
 
-export async function getChatsAction(companyId: number) {
-  return getChats(companyId);
+export async function getChatsAction() {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      data: null,
+      error: 'Unauthorized',
+      success: false as const,
+    };
+  }
+
+  const companyId = session.user.companyId;
+
+  const chats = await getChats(companyId);
+
+  return {
+    data: chats,
+    error: null,
+    success: true as const,
+  };
 }
 
-export async function deleteChatAction(companyId: number, chatId: number) {
+export async function deleteChatAction(chatId: number) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      data: null,
+      error: 'Unauthorized',
+      success: false,
+    };
+  }
+
+  const companyId = session.user.companyId;
+
   return deleteChat(companyId, chatId);
 }

@@ -1,5 +1,7 @@
-import { getChatsAction } from '@/app/actions/chat.actions';
+import { redirect } from 'next/navigation';
 
+import { getChatsAction } from '@/app/actions/chat.actions';
+import { auth } from '@/auth';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 
@@ -8,7 +10,14 @@ export default async function ChatLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const chats = await getChatsAction(1);
+  const session = await auth();
+  const chatsResult = await getChatsAction();
+
+  if (!session?.user || !chatsResult.success) {
+    redirect('/login');
+  }
+
+  const chats = chatsResult.data;
 
   return (
     <main className="flex h-screen w-screen">

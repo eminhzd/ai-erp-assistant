@@ -1,13 +1,13 @@
 import { google } from '@ai-sdk/google';
-
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   streamText,
   toUIMessageStream,
 } from 'ai';
-
 import * as z from 'zod';
+
+import { auth } from '@/auth';
 
 import { createChatWithMessage, getChatById } from '@/server/chat/chat.service';
 
@@ -16,16 +16,29 @@ import {
   getMessagesByChatId,
 } from '@/server/messages/messages.service';
 
-const ChatRequestSchema = z.object({
+const chatRequestSchema = z.object({
   chatId: z.number().int().positive().optional(),
   content: z.string().trim().min(1).max(3000),
 });
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return Response.json(
+        {
+          error: 'Unauthorized',
+        },
+        { status: 401 },
+      );
+    }
+
+    const companyId = session.user.companyId;
+
     const json = await req.json();
 
-    const validation = ChatRequestSchema.safeParse(json);
+    const validation = chatRequestSchema.safeParse(json);
 
     if (!validation.success) {
       return Response.json(
@@ -38,10 +51,6 @@ export async function POST(req: Request) {
     }
 
     const { chatId, content } = validation.data;
-
-    // Temporary company context.
-    // Will be replaced with authenticated user's company.
-    const companyId = 1;
 
     let currentChatId = chatId;
 

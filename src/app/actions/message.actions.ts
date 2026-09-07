@@ -1,5 +1,6 @@
 'use server';
 
+import { auth } from '@/auth';
 import {
   createMessage,
   getMessagesByChatId,
@@ -24,9 +25,21 @@ type CreateMessageError = {
 export async function createMessageAction(
   messageData: MessageCreateClientInput,
 ): Promise<CreateMessageSuccess | CreateMessageError> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      data: null,
+      error: 'Unauthorized',
+      success: false,
+    };
+  }
+
+  const companyId = session.user.companyId;
+
   const data = {
     ...messageData,
-    companyId: 1, // Assuming companyId is always 1 for this example
+    companyId,
     role: 'user',
   };
 
@@ -49,9 +62,18 @@ export async function createMessageAction(
   }
 }
 
-export async function getMessagesByChatIdAction(
-  companyId: number,
-  chatId: number,
-) {
+export async function getMessagesByChatIdAction(chatId: number) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      data: null,
+      error: 'Unauthorized',
+      success: false,
+    };
+  }
+
+  const companyId = session.user.companyId;
+
   return getMessagesByChatId(companyId, chatId);
 }

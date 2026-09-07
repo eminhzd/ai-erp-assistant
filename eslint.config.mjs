@@ -7,7 +7,7 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
-      'no-console': 'warn',
+      // 'no-console': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
       eqeqeq: ['error', 'always'],

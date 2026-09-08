@@ -1,7 +1,10 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+
+import { auth } from '@/auth';
 
 import { getChatById } from '@/server/chat/chat.service';
 import { getMessagesByChatId } from '@/server/messages/messages.service';
+
 import { Chat } from '@/components/chat/Chat';
 
 export default async function ChatPage({
@@ -9,16 +12,29 @@ export default async function ChatPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect('/login');
+  }
+
   const { id } = await params;
+
   const chatId = Number(id);
 
-  if (!Number.isInteger(chatId) || chatId <= 0) notFound();
+  if (!Number.isInteger(chatId) || chatId <= 0) {
+    notFound();
+  }
 
-  const chat = await getChatById(1, chatId);
+  const companyId = session.user.companyId;
 
-  if (!chat) notFound();
+  const chat = await getChatById(companyId, chatId);
 
-  const messages = await getMessagesByChatId(1, chatId);
+  if (!chat) {
+    notFound();
+  }
+
+  const messages = await getMessagesByChatId(companyId, chatId);
 
   return <Chat messages={messages} chat={chat} />;
 }

@@ -55,8 +55,7 @@ export async function POST(req: Request) {
     let currentChatId = chatId;
 
     if (!currentChatId) {
-      const chat = await createChatWithMessage({
-        companyId,
+      const chat = await createChatWithMessage(companyId, {
         content,
       });
 
@@ -68,8 +67,7 @@ export async function POST(req: Request) {
         return Response.json({ error: 'Chat not found' }, { status: 404 });
       }
 
-      await createMessage({
-        companyId,
+      await createMessage(companyId, {
         chatId: currentChatId,
         role: 'user',
         content,
@@ -110,8 +108,7 @@ export async function POST(req: Request) {
 
             const text = await streamResult.text;
 
-            await createMessage({
-              companyId,
+            await createMessage(companyId, {
               chatId: currentChatId,
               role: 'assistant',
               content: text,

@@ -32,8 +32,14 @@ export async function registerUserAction(
   registerData: z.infer<typeof registerUserSchema>,
 ): Promise<RegisterUserActionResult> {
   try {
-    const { confirmPassword, ...userData } =
-      registerUserSchema.parse(registerData);
+    const validatedData = registerUserSchema.parse(registerData);
+
+    const userData = {
+      companyName: validatedData.companyName,
+      email: validatedData.email,
+      password: validatedData.password,
+      name: validatedData.name,
+    };
 
     await registerUser(userData);
 

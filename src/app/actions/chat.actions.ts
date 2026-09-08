@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/auth';
+
 import {
   createChatWithMessage,
   getChatById,
@@ -39,19 +40,13 @@ export async function createChatWithMessageAction(
 
   const companyId = session.user.companyId;
 
-  const data = {
-    ...chatData,
-    companyId,
-  };
-
   try {
-    const response = await createChatWithMessage(data);
-    const finalizedResponse: CreateChatWithMessageSuccess = {
+    const response = await createChatWithMessage(companyId, chatData);
+
+    return {
       data: response,
       success: true,
     };
-
-    return finalizedResponse;
   } catch (error) {
     console.error('Error creating chat:', error);
 

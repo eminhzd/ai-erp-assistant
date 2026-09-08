@@ -1,7 +1,6 @@
 import { db } from '@/prisma/db';
 
 export type SupplierCreateInput = {
-  companyId: number;
   name: string;
   email?: string;
   phone?: string;
@@ -17,8 +16,14 @@ export type SupplierUpdateInput = {
   taxId?: string;
 };
 
-export async function createSupplier(supplierData: SupplierCreateInput) {
-  return db.orm.public.Supplier.create(supplierData);
+export async function createSupplier(
+  companyId: number,
+  supplierData: SupplierCreateInput,
+) {
+  return db.orm.public.Supplier.create({
+    ...supplierData,
+    companyId,
+  });
 }
 
 export async function getSuppliersByCompanyId(companyId: number) {

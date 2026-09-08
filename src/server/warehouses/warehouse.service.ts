@@ -1,9 +1,6 @@
 import { db } from '@/prisma/db';
 
-// type WarehouseCreateInput = Parameters<typeof db.orm.public.Warehouse.create>[0];
-
 export type WarehouseCreateInput = {
-  companyId: number;
   name: string;
   address?: string;
 };
@@ -13,8 +10,14 @@ export type WarehouseUpdateInput = {
   address?: string;
 };
 
-export async function createWarehouse(warehouseData: WarehouseCreateInput) {
-  return db.orm.public.Warehouse.create(warehouseData);
+export async function createWarehouse(
+  companyId: number,
+  warehouseData: WarehouseCreateInput,
+) {
+  return db.orm.public.Warehouse.create({
+    ...warehouseData,
+    companyId,
+  });
 }
 
 export async function getWarehousesByCompanyId(companyId: number) {
@@ -45,7 +48,10 @@ export async function updateWarehouse(
 }
 
 export async function deleteWarehouse(companyId: number, warehouseId: number) {
-  return db.orm.public.Warehouse.where({ companyId, id: warehouseId }).update({
+  return db.orm.public.Warehouse.where({
+    companyId,
+    id: warehouseId,
+  }).update({
     isActive: false,
   });
 }

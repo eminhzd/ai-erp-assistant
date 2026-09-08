@@ -1,7 +1,5 @@
 import { db } from '@/prisma/db';
 
-import type { DbClient } from '@/prisma/types';
-
 import {
   addDecimal,
   compareDecimal,
@@ -11,15 +9,13 @@ import {
   subtractDecimal,
 } from '@/lib/decimal';
 
-import { ValidationError, NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
 import { getCustomerById } from '../customers/customer.service';
-import { getWarehouseById } from '../warehouses/warehouse.service';
 import { getProductById } from '../products/product.service';
-
 import { createSalesInvoiceItemInTransaction } from '../sales-invoice-items/sales-invoice-items.service';
-
 import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
+import { getWarehouseById } from '../warehouses/warehouse.service';
 
 export type SalesInvoiceItemInput = {
   productId: number;
@@ -28,7 +24,6 @@ export type SalesInvoiceItemInput = {
 };
 
 export type SalesInvoiceCreateInput = {
-  companyId: number;
   customerId: number;
   warehouseId: number;
   invoiceNumber: string;
@@ -62,9 +57,11 @@ function calculateSubtotal(
   return subtotal;
 }
 
-export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
+export async function createSalesInvoice(
+  companyId: number,
+  invoiceData: SalesInvoiceCreateInput,
+) {
   const {
-    companyId,
     customerId,
     warehouseId,
     items,
@@ -141,7 +138,7 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
 
   const total = addDecimal(subtotalAfterDiscount, tax);
 
-  return db.transaction(async (tx: DbClient) => {
+  return db.transaction(async (tx) => {
     const invoice = await tx.orm.public.SalesInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,
@@ -170,8 +167,8 @@ export async function createSalesInvoice(invoiceData: SalesInvoiceCreateInput) {
       );
 
       await createStockMovementInTransaction(
+        companyId,
         {
-          companyId,
           warehouseId,
           productId: item.productId,
           type: 'SALE',

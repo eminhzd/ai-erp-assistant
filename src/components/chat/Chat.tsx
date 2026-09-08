@@ -107,14 +107,7 @@ export function Chat({
               >
                 {message.parts.map((part, index) => {
                   if (part.type === 'text') {
-                    return (
-                      <span
-                        key={index}
-                        className="wrap-break-words whitespace-pre-wrap"
-                      >
-                        {part.text}
-                      </span>
-                    );
+                    return <span key={index}>{part.text}</span>;
                   }
 
                   return null;

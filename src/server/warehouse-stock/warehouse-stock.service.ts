@@ -1,4 +1,5 @@
 import { db } from '@/prisma/db';
+
 import type { DbClient } from '@/prisma/types';
 
 import {
@@ -8,7 +9,7 @@ import {
   subtractDecimal,
 } from '@/lib/decimal';
 
-import { ConflictError, ValidationError, NotFoundError } from '@/lib/errors';
+import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 
 export type WarehouseStockCreateInput = {
   productId: number;
@@ -16,7 +17,6 @@ export type WarehouseStockCreateInput = {
 };
 
 export type WarehouseStockOperationInput = {
-  companyId: number;
   warehouseId: number;
   productId: number;
   quantity: string;
@@ -99,7 +99,8 @@ export async function getWarehouseStock(
 }
 
 export async function increaseWarehouseStock(
-  { companyId, warehouseId, productId, quantity }: WarehouseStockOperationInput,
+  companyId: number,
+  { warehouseId, productId, quantity }: WarehouseStockOperationInput,
   client: DbClient = db,
 ) {
   if (!isPositiveDecimal(quantity)) {
@@ -137,7 +138,8 @@ export async function increaseWarehouseStock(
 }
 
 export async function decreaseWarehouseStock(
-  { companyId, warehouseId, productId, quantity }: WarehouseStockOperationInput,
+  companyId: number,
+  { warehouseId, productId, quantity }: WarehouseStockOperationInput,
   client: DbClient = db,
 ) {
   if (!isPositiveDecimal(quantity)) {

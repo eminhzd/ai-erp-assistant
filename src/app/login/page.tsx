@@ -78,6 +78,10 @@ export default function LoginPage() {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
+          <Button type="submit" className="w-full cursor-pointer">
+            Login
+          </Button>
+
           <div className="flex items-center justify-center gap-2">
             <p className="text-muted-foreground text-sm">
               Don&apos;t have an account?{' '}
@@ -89,10 +93,6 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-
-          <Button type="submit" className="w-full cursor-pointer">
-            Login
-          </Button>
         </form>
       </div>
     </main>

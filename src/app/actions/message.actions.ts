@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/auth';
+
 import {
   createMessage,
   getMessagesByChatId,
@@ -37,20 +38,16 @@ export async function createMessageAction(
 
   const companyId = session.user.companyId;
 
-  const data = {
-    ...messageData,
-    companyId,
-    role: 'user',
-  };
-
   try {
-    const response = await createMessage(data);
-    const finalizedResponse: CreateMessageSuccess = {
+    const response = await createMessage(companyId, {
+      ...messageData,
+      role: 'user',
+    });
+
+    return {
       data: response,
       success: true,
     };
-
-    return finalizedResponse;
   } catch (error) {
     console.error('Error creating message:', error);
 

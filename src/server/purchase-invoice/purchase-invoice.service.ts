@@ -1,7 +1,5 @@
 import { db } from '@/prisma/db';
 
-import type { DbClient } from '@/prisma/types';
-
 import {
   addDecimal,
   compareDecimal,
@@ -11,15 +9,14 @@ import {
   subtractDecimal,
 } from '@/lib/decimal';
 
-import { ValidationError, NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
-import { getSupplierById } from '../suppliers/supplier.service';
-import { getWarehouseById } from '../warehouses/warehouse.service';
 import { getProductById } from '../products/product.service';
 
 import { createPurchaseInvoiceItemInTransaction } from '../purchase-invoice-items/purchase-invoice-items.service';
-
 import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
+import { getSupplierById } from '../suppliers/supplier.service';
+import { getWarehouseById } from '../warehouses/warehouse.service';
 
 export type PurchaseInvoiceItemInput = {
   productId: number;
@@ -28,7 +25,6 @@ export type PurchaseInvoiceItemInput = {
 };
 
 export type PurchaseInvoiceCreateInput = {
-  companyId: number;
   supplierId: number;
   warehouseId: number;
   invoiceNumber: string;
@@ -55,6 +51,7 @@ function calculateSubtotal(
 
   for (const item of items) {
     const lineTotal = multiplyDecimal(item.quantity, item.unitPrice);
+
     subtotal = addDecimal(subtotal, lineTotal);
   }
 
@@ -62,10 +59,10 @@ function calculateSubtotal(
 }
 
 export async function createPurchaseInvoice(
+  companyId: number,
   invoiceData: PurchaseInvoiceCreateInput,
 ) {
   const {
-    companyId,
     supplierId,
     warehouseId,
     items,
@@ -141,9 +138,10 @@ export async function createPurchaseInvoice(
   }
 
   const subtotalAfterDiscount = subtractDecimal(subtotal, discount);
+
   const total = addDecimal(subtotalAfterDiscount, tax);
 
-  return db.transaction(async (tx: DbClient) => {
+  return db.transaction(async (tx) => {
     const invoice = await tx.orm.public.PurchaseInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,
@@ -172,8 +170,8 @@ export async function createPurchaseInvoice(
       );
 
       await createStockMovementInTransaction(
+        companyId,
         {
-          companyId,
           warehouseId,
           productId: item.productId,
           type: 'PURCHASE',

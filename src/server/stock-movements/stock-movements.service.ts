@@ -2,20 +2,19 @@ import { db } from '@/prisma/db';
 
 import type { DbClient } from '@/prisma/types';
 
+import { compareDecimal, isPositiveDecimal } from '@/lib/decimal';
+
+import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
+
 import {
   decreaseWarehouseStock,
   increaseWarehouseStock,
 } from '../warehouse-stock/warehouse-stock.service';
 
-import { compareDecimal, isPositiveDecimal } from '@/lib/decimal';
-
-import { ValidationError, ConflictError, NotFoundError } from '@/lib/errors';
-
 export type StockMovementType =
   'PURCHASE' | 'SALE' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT';
 
 export type StockMovementCreateInput = {
-  companyId: number;
   warehouseId: number;
   productId: number;
   type: StockMovementType;
@@ -25,6 +24,7 @@ export type StockMovementCreateInput = {
 };
 
 async function validateStockMovement(
+  companyId: number,
   stockMovementData: StockMovementCreateInput,
   client: DbClient,
 ) {
@@ -33,7 +33,6 @@ async function validateStockMovement(
     purchaseInvoiceId,
     salesInvoiceId,
     quantity,
-    companyId,
     warehouseId,
     productId,
   } = stockMovementData;
@@ -137,6 +136,7 @@ async function validateStockMovement(
     }
 
     const existingMovement = await client.orm.public.StockMovement.where({
+      companyId,
       purchaseInvoiceId: invoice.id,
       productId,
       type: 'PURCHASE',
@@ -183,6 +183,7 @@ async function validateStockMovement(
     }
 
     const existingMovement = await client.orm.public.StockMovement.where({
+      companyId,
       salesInvoiceId: invoice.id,
       productId,
       type: 'SALE',
@@ -197,19 +198,20 @@ async function validateStockMovement(
 }
 
 export async function createStockMovementInTransaction(
+  companyId: number,
   stockMovementData: StockMovementCreateInput,
   client: DbClient,
 ) {
-  await validateStockMovement(stockMovementData, client);
+  await validateStockMovement(companyId, stockMovementData, client);
 
-  const { type, companyId, warehouseId, productId, quantity } =
-    stockMovementData;
+  const { type, warehouseId, productId, quantity } = stockMovementData;
 
-  const movement =
-    await client.orm.public.StockMovement.create(stockMovementData);
+  const movement = await client.orm.public.StockMovement.create({
+    companyId,
+    ...stockMovementData,
+  });
 
   const stockOperationData = {
-    companyId,
     warehouseId,
     productId,
     quantity,
@@ -218,12 +220,12 @@ export async function createStockMovementInTransaction(
   switch (type) {
     case 'PURCHASE':
     case 'ADJUSTMENT_IN':
-      await increaseWarehouseStock(stockOperationData, client);
+      await increaseWarehouseStock(companyId, stockOperationData, client);
       break;
 
     case 'SALE':
     case 'ADJUSTMENT_OUT':
-      await decreaseWarehouseStock(stockOperationData, client);
+      await decreaseWarehouseStock(companyId, stockOperationData, client);
       break;
 
     default:
@@ -234,10 +236,11 @@ export async function createStockMovementInTransaction(
 }
 
 export async function createStockMovement(
+  companyId: number,
   stockMovementData: StockMovementCreateInput,
 ) {
-  return db.transaction(async (tx: DbClient) => {
-    return createStockMovementInTransaction(stockMovementData, tx);
+  return db.transaction(async (tx) => {
+    return createStockMovementInTransaction(companyId, stockMovementData, tx);
   });
 }
 

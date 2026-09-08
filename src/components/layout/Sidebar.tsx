@@ -1,6 +1,6 @@
-import { NewChatBtn } from '../sidebar/NewChatBtn';
+import { NewChatBtn } from './sidebar/NewChatBtn';
 
-import { ChatBtn } from '../sidebar/ChatBtn';
+import { ChatBtn } from './sidebar/ChatBtn';
 
 type SidebarProps = {
   chats: {

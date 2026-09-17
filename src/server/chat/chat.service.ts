@@ -47,3 +47,14 @@ export async function deleteChat(companyId: number, id: number) {
     id,
   }).delete();
 }
+
+export async function updateChatTitle(
+  companyId: number,
+  id: number,
+  title: string,
+) {
+  return db.orm.public.Chat.where({
+    companyId,
+    id,
+  }).update({ title });
+}

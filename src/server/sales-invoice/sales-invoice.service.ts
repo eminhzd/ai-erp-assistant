@@ -26,8 +26,6 @@ export type SalesInvoiceItemInput = {
 export type SalesInvoiceCreateInput = {
   customerId: number;
   warehouseId: number;
-  invoiceNumber: string;
-  currency: 'USD' | 'EUR' | 'AZN';
   discount?: string;
   tax?: string;
   issueDate?: Date;
@@ -57,6 +55,32 @@ function calculateSubtotal(
   return subtotal;
 }
 
+async function generateSalesInvoiceNumber(companyId: number): Promise<string> {
+  const invoices = await db.orm.public.SalesInvoice.where({
+    companyId,
+  }).all();
+
+  let maxNumber = 0;
+
+  for (const invoice of invoices) {
+    const match = invoice.invoiceNumber.match(/^SALES-INV-(\d+)$/);
+
+    if (!match) {
+      continue;
+    }
+
+    const number = Number(match[1]);
+
+    if (number > maxNumber) {
+      maxNumber = number;
+    }
+  }
+
+  const nextNumber = maxNumber + 1;
+
+  return `SALES-INV-${String(nextNumber).padStart(3, '0')}`;
+}
+
 export async function createSalesInvoice(
   companyId: number,
   invoiceData: SalesInvoiceCreateInput,
@@ -80,6 +104,14 @@ export async function createSalesInvoice(
 
   if (!isNonNegativeDecimal(tax)) {
     throw new ValidationError('Tax cannot be negative');
+  }
+
+  const company = await db.orm.public.Company.where({
+    id: companyId,
+  }).first();
+
+  if (!company) {
+    throw new NotFoundError('Company not found');
   }
 
   const customer = await getCustomerById(companyId, customerId);
@@ -137,13 +169,30 @@ export async function createSalesInvoice(
   const subtotalAfterDiscount = subtractDecimal(subtotal, discount);
 
   const total = addDecimal(subtotalAfterDiscount, tax);
+  const invoiceNumber = await generateSalesInvoiceNumber(companyId);
 
   return db.transaction(async (tx) => {
+    console.log('Creating sales invoice', {
+      ...invoiceDataWithoutItems,
+      companyId,
+      customerId,
+      warehouseId,
+      invoiceNumber,
+      currency: company.currency,
+      status: 'ISSUED',
+      subtotal,
+      discount,
+      tax,
+      total,
+    });
+
     const invoice = await tx.orm.public.SalesInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,
       customerId,
       warehouseId,
+      invoiceNumber,
+      currency: company.currency,
       status: 'ISSUED',
       subtotal,
       discount,

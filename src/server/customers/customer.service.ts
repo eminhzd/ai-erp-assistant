@@ -61,3 +61,11 @@ export async function deleteCustomer(companyId: number, customerId: number) {
     isActive: false,
   });
 }
+
+export async function findCustomers(companyId: number, query: string) {
+  const normalizedQuery = query.trim();
+
+  return db.orm.public.Customer.where({ companyId, isActive: true })
+    .where((customer) => customer.name.ilike(`%${normalizedQuery}%`))
+    .all();
+}

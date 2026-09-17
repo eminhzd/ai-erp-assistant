@@ -61,3 +61,11 @@ export async function deleteSupplier(companyId: number, supplierId: number) {
     isActive: false,
   });
 }
+
+export async function findSuppliers(companyId: number, query: string) {
+  const normalizedQuery = query.trim();
+
+  return db.orm.public.Supplier.where({ companyId, isActive: true })
+    .where((supplier) => supplier.name.ilike(`%${normalizedQuery}%`))
+    .all();
+}

@@ -2,6 +2,7 @@
 
 import { ConflictError } from '@/lib/errors';
 import { registerUser } from '@/server/users/user.service';
+import type { ActionResult } from '@/types/action-result';
 
 import * as z from 'zod';
 
@@ -18,19 +19,9 @@ const registerUserSchema = z
     path: ['confirmPassword'],
   });
 
-type RegisterUserActionResult =
-  | {
-      error: null;
-      success: true;
-    }
-  | {
-      error: string;
-      success: false;
-    };
-
 export async function registerUserAction(
   registerData: z.infer<typeof registerUserSchema>,
-): Promise<RegisterUserActionResult> {
+): Promise<ActionResult<null>> {
   try {
     const validatedData = registerUserSchema.parse(registerData);
 
@@ -44,12 +35,14 @@ export async function registerUserAction(
     await registerUser(userData);
 
     return {
+      data: null,
       error: null,
       success: true,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
+        data: null,
         error: 'Invalid registration data',
         success: false,
       };
@@ -57,6 +50,7 @@ export async function registerUserAction(
 
     if (error instanceof ConflictError) {
       return {
+        data: null,
         error: error.message,
         success: false,
       };
@@ -65,6 +59,7 @@ export async function registerUserAction(
     console.error('Error registering user:', error);
 
     return {
+      data: null,
       error: 'Failed to register user',
       success: false,
     };

@@ -4,17 +4,20 @@ import {
   createUIMessageStreamResponse,
   streamText,
   toUIMessageStream,
+  stepCountIs,
 } from 'ai';
+
 import * as z from 'zod';
 
 import { auth } from '@/auth';
-
 import { createChatWithMessage, getChatById } from '@/server/chat/chat.service';
-
+import { createErpTools } from '@/server/ai/erp-tools';
 import {
   createMessage,
   getMessagesByChatId,
 } from '@/server/messages/messages.service';
+
+import { ERP_SYSTEM_PROMPT } from '@/server/ai/system-prompt';
 
 const chatRequestSchema = z.object({
   chatId: z.number().int().positive().optional(),
@@ -82,8 +85,12 @@ export async function POST(req: Request) {
     }));
 
     const streamResult = streamText({
-      model: google('gemini-3.7-flash'),
+      model: google('gemini-3.5-flash-lite'),
+      system: ERP_SYSTEM_PROMPT,
       messages: modelMessages,
+      tools: createErpTools(companyId),
+      stopWhen: stepCountIs(8),
+      maxRetries: 0,
     });
 
     return createUIMessageStreamResponse({

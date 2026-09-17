@@ -1,4 +1,5 @@
-import type { UIMessage } from 'ai';
+import type { InferUITools, ToolUIPart, UIMessage } from 'ai';
+import type { createErpTools } from '@/server/ai/erp-tools';
 
 export type ChatDataParts = {
   chat: {
@@ -6,4 +7,14 @@ export type ChatDataParts = {
   };
 };
 
-export type ChatUIMessage = UIMessage<unknown, ChatDataParts>;
+type ErpTools = InferUITools<ReturnType<typeof createErpTools>>;
+
+export type ChatUIMessage = UIMessage<unknown, ChatDataParts, ErpTools>;
+
+type ErpToolPart = ToolUIPart<ErpTools>;
+
+export function isErpToolPart(
+  part: ChatUIMessage['parts'][number],
+): part is ErpToolPart {
+  return part.type.startsWith('tool-');
+}

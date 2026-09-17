@@ -1,5 +1,7 @@
 import { db } from '@/prisma/db';
 
+import { or } from '@prisma/orm-postgres/orm-client';
+
 export type ProductCreateInput = {
   name: string;
   description?: string;
@@ -62,4 +64,20 @@ export async function deleteProduct(companyId: number, productId: number) {
   }).update({
     isActive: false,
   });
+}
+
+export async function findProducts(companyId: number, query: string) {
+  const normalizedQuery = query.trim();
+
+  return db.orm.public.Product.where({
+    companyId,
+    isActive: true,
+  })
+    .where((product) =>
+      or(
+        product.name.ilike(`%${normalizedQuery}%`),
+        product.sku.ilike(`%${normalizedQuery}%`),
+      ),
+    )
+    .all();
 }

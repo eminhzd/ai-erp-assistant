@@ -55,3 +55,11 @@ export async function deleteWarehouse(companyId: number, warehouseId: number) {
     isActive: false,
   });
 }
+
+export async function findWarehouses(companyId: number, query: string) {
+  const normalizedQuery = query.trim();
+
+  return db.orm.public.Warehouse.where({ companyId, isActive: true })
+    .where((üarehouse) => üarehouse.name.ilike(`%${normalizedQuery}%`))
+    .all();
+}

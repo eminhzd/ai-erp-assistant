@@ -1,33 +1,98 @@
 'use server';
 
 import { auth } from '@/auth';
-
 import {
-  createChatWithMessage,
-  getChatById,
+  // createChatWithMessage,
+  // getChatById,
   getChats,
   deleteChat,
+  updateChatTitle,
 } from '@/server/chat/chat.service';
+import type { ActionResult } from '@/types/action-result';
+
+import * as z from 'zod';
 
 export type CreateChatWithMessageClientInput = {
   title?: string;
   content: string;
 };
 
-type CreateChatWithMessageSuccess = {
-  data: Awaited<ReturnType<typeof createChatWithMessage>>;
-  success: true;
-};
+const updateChatTitleSchema = z.object({
+  chatId: z.number().int().positive(),
+  title: z.string().trim().min(1).max(100),
+});
 
-type CreateChatWithMessageError = {
-  data: null;
-  error: string;
-  success: false;
-};
+// export async function createChatWithMessageAction(
+//   chatData: CreateChatWithMessageClientInput,
+// ): Promise<ActionResult<Awaited<ReturnType<typeof createChatWithMessage>>>> {
+//   const session = await auth();
 
-export async function createChatWithMessageAction(
-  chatData: CreateChatWithMessageClientInput,
-): Promise<CreateChatWithMessageSuccess | CreateChatWithMessageError> {
+//   if (!session?.user) {
+//     return {
+//       data: null,
+//       error: 'Unauthorized',
+//       success: false,
+//     };
+//   }
+
+//   const companyId = session.user.companyId;
+
+//   try {
+//     const response = await createChatWithMessage(companyId, chatData);
+
+//     return {
+//       data: response,
+//       error: null,
+//       success: true,
+//     };
+//   } catch (error) {
+//     console.error('Error creating chat:', error);
+
+//     return {
+//       data: null,
+//       error: 'Failed to create chat',
+//       success: false,
+//     };
+//   }
+// }
+
+// export async function getChatByIdAction(
+//   chatId: number,
+// ): Promise<ActionResult<Awaited<ReturnType<typeof getChatById>>>> {
+//   const session = await auth();
+
+//   if (!session?.user) {
+//     return {
+//       data: null,
+//       error: 'Unauthorized',
+//       success: false,
+//     };
+//   }
+
+//   const companyId = session.user.companyId;
+
+//   try {
+//     const response = await getChatById(companyId, chatId);
+
+//     return {
+//       data: response,
+//       error: null,
+//       success: true,
+//     };
+//   } catch (error) {
+//     console.error('Error getting chat by ID:', error);
+
+//     return {
+//       data: null,
+//       error: 'Failed to get chat',
+//       success: false,
+//     };
+//   }
+// }
+
+export async function getChatsAction(): Promise<
+  ActionResult<Awaited<ReturnType<typeof getChats>>>
+> {
   const session = await auth();
 
   if (!session?.user) {
@@ -41,24 +106,27 @@ export async function createChatWithMessageAction(
   const companyId = session.user.companyId;
 
   try {
-    const response = await createChatWithMessage(companyId, chatData);
+    const response = await getChats(companyId);
 
     return {
       data: response,
+      error: null,
       success: true,
     };
   } catch (error) {
-    console.error('Error creating chat:', error);
+    console.error('Error getting chats:', error);
 
     return {
       data: null,
-      error: 'Failed to create chat',
+      error: 'Failed to get chats',
       success: false,
     };
   }
 }
 
-export async function getChatByIdAction(chatId: number) {
+export async function deleteChatAction(
+  chatId: number,
+): Promise<ActionResult<Awaited<ReturnType<typeof deleteChat>>>> {
   const session = await auth();
 
   if (!session?.user) {
@@ -71,32 +139,42 @@ export async function getChatByIdAction(chatId: number) {
 
   const companyId = session.user.companyId;
 
-  return getChatById(companyId, chatId);
-}
+  try {
+    const response = await deleteChat(companyId, chatId);
 
-export async function getChatsAction() {
-  const session = await auth();
+    return {
+      data: response,
+      error: null,
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error deleting chat:', error);
 
-  if (!session?.user) {
     return {
       data: null,
-      error: 'Unauthorized',
-      success: false as const,
+      error: 'Failed to delete chat',
+      success: false,
+    };
+  }
+}
+
+export async function updateChatTitleAction(
+  chatId: number,
+  title: string,
+): Promise<ActionResult<Awaited<ReturnType<typeof updateChatTitle>>>> {
+  const validation = updateChatTitleSchema.safeParse({
+    chatId,
+    title,
+  });
+
+  if (!validation.success) {
+    return {
+      data: null,
+      error: 'Invalid chat title',
+      success: false,
     };
   }
 
-  const companyId = session.user.companyId;
-
-  const chats = await getChats(companyId);
-
-  return {
-    data: chats,
-    error: null,
-    success: true as const,
-  };
-}
-
-export async function deleteChatAction(chatId: number) {
   const session = await auth();
 
   if (!session?.user) {
@@ -109,5 +187,25 @@ export async function deleteChatAction(chatId: number) {
 
   const companyId = session.user.companyId;
 
-  return deleteChat(companyId, chatId);
+  try {
+    const response = await updateChatTitle(
+      companyId,
+      validation.data.chatId,
+      validation.data.title,
+    );
+
+    return {
+      data: response,
+      error: null,
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error updating chat:', error);
+
+    return {
+      data: null,
+      error: 'Failed to update chat',
+      success: false,
+    };
+  }
 }

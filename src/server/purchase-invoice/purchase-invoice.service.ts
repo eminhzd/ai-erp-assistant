@@ -12,7 +12,6 @@ import {
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
 import { getProductById } from '../products/product.service';
-
 import { createPurchaseInvoiceItemInTransaction } from '../purchase-invoice-items/purchase-invoice-items.service';
 import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
 import { getSupplierById } from '../suppliers/supplier.service';
@@ -27,8 +26,6 @@ export type PurchaseInvoiceItemInput = {
 export type PurchaseInvoiceCreateInput = {
   supplierId: number;
   warehouseId: number;
-  invoiceNumber: string;
-  currency: 'USD' | 'EUR' | 'AZN';
   discount?: string;
   tax?: string;
   issueDate?: Date;
@@ -51,11 +48,36 @@ function calculateSubtotal(
 
   for (const item of items) {
     const lineTotal = multiplyDecimal(item.quantity, item.unitPrice);
-
     subtotal = addDecimal(subtotal, lineTotal);
   }
 
   return subtotal;
+}
+
+async function generatePurchaseInvoiceNumber(
+  companyId: number,
+): Promise<string> {
+  const invoices = await db.orm.public.PurchaseInvoice.where({
+    companyId,
+  }).all();
+
+  let maxNumber = 0;
+
+  for (const invoice of invoices) {
+    const match = invoice.invoiceNumber.match(/^PURCH-INV-(\d+)$/);
+
+    if (!match) continue;
+
+    const number = Number(match[1]);
+
+    if (number > maxNumber) {
+      maxNumber = number;
+    }
+  }
+
+  const nextNumber = maxNumber + 1;
+
+  return `PURCH-INV-${String(nextNumber).padStart(3, '0')}`;
 }
 
 export async function createPurchaseInvoice(
@@ -83,6 +105,12 @@ export async function createPurchaseInvoice(
 
   if (!isNonNegativeDecimal(tax)) {
     throw new ValidationError('Tax cannot be negative');
+  }
+
+  const company = await db.orm.public.Company.where({ id: companyId }).first();
+
+  if (!company) {
+    throw new NotFoundError('Company not found');
   }
 
   const supplier = await getSupplierById(companyId, supplierId);
@@ -140,13 +168,30 @@ export async function createPurchaseInvoice(
   const subtotalAfterDiscount = subtractDecimal(subtotal, discount);
 
   const total = addDecimal(subtotalAfterDiscount, tax);
+  const invoiceNumber = await generatePurchaseInvoiceNumber(companyId);
 
   return db.transaction(async (tx) => {
+    console.log('Creating purchase invoice', {
+      ...invoiceDataWithoutItems,
+      companyId,
+      supplierId,
+      warehouseId,
+      invoiceNumber,
+      currency: company.currency,
+      status: 'ISSUED',
+      subtotal,
+      discount,
+      tax,
+      total,
+    });
+
     const invoice = await tx.orm.public.PurchaseInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,
       supplierId,
       warehouseId,
+      invoiceNumber,
+      currency: company.currency,
       status: 'ISSUED',
       subtotal,
       discount,

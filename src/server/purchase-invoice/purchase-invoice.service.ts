@@ -171,20 +171,6 @@ export async function createPurchaseInvoice(
   const invoiceNumber = await generatePurchaseInvoiceNumber(companyId);
 
   return db.transaction(async (tx) => {
-    console.log('Creating purchase invoice', {
-      ...invoiceDataWithoutItems,
-      companyId,
-      supplierId,
-      warehouseId,
-      invoiceNumber,
-      currency: company.currency,
-      status: 'ISSUED',
-      subtotal,
-      discount,
-      tax,
-      total,
-    });
-
     const invoice = await tx.orm.public.PurchaseInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,

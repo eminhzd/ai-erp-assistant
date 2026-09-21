@@ -150,10 +150,11 @@ export function createProductTools(companyId: number) {
 
     deleteProduct: tool({
       description:
-        'Soft-delete an active product. Use this tool only when the user explicitly and clearly asks to delete a product. The product ID must identify the intended product. This operation is destructive and should not be performed based on an indirect request, suggestion, or old conversation context.',
+        'Soft-delete an active product. Use this tool only when the user explicitly and clearly asks to delete a product. The product ID must identify the intended product. This operation is destructive and requires user confirmation.',
       inputSchema: z.object({
         productId: z.number().int().positive(),
       }),
+      needsApproval: true,
       execute: ({ productId }) =>
         runTool('deleteProduct', 'Product could not be deleted.', async () => {
           const product = await deleteProduct(companyId, productId);

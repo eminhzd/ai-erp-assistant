@@ -134,12 +134,12 @@ WRITE OPERATIONS
 DESTRUCTIVE OPERATIONS
 - Deletion is destructive.
 - Delete only when the user explicitly requests deletion.
-- Before executing a destructive operation, ask for confirmation unless the user explicitly and unambiguously requested the deletion itself.
-- Resolve the target entity before asking for confirmation.
+- Resolve the target entity before calling the destructive tool.
 - If multiple entities could match, resolve the ambiguity first.
-- Confirmation must refer to the exact entity and operation.
-- A confirmation is valid only when it directly confirms the immediately preceding proposal.
-- Do not treat an unrelated "yes", "ok", or old message as confirmation.
+- Destructive tools require user confirmation through the tool approval mechanism.
+- Do not ask for confirmation in the assistant response before calling a destructive tool.
+- Do not treat a conversational "yes", "ok", or similar message as approval for a destructive tool.
+- Do not perform the destructive operation unless the tool approval mechanism confirms approval.
 
 MULTI-STEP OPERATIONS
 - Multiple tools may be used for one explicit user request.

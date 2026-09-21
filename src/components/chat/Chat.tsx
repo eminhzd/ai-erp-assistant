@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DefaultChatTransport } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 import * as z from 'zod';
 
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { ConfirmDialog } from '@/components/confirmation-dialog/ConfirmationDialog';
 
 import { isErpToolPart, type ChatUIMessage } from '@/types/chat';
 import { getToolStatusText } from './ToolStatus';
@@ -17,6 +19,31 @@ import { getToolStatusText } from './ToolStatus';
 const messageSchema = z.object({
   content: z.string().trim().min(1).max(3000),
 });
+
+const approvalConfig = {
+  deleteCustomer: {
+    title: 'Delete customer?',
+    confirmText: 'Delete',
+    description: 'This customer will be deactivated.',
+  },
+  deleteProduct: {
+    title: 'Delete product?',
+    confirmText: 'Delete',
+    description: 'This product will be deactivated.',
+  },
+  deleteSupplier: {
+    title: 'Delete supplier?',
+    confirmText: 'Delete',
+    description: 'This supplier will be deactivated.',
+  },
+  deleteWarehouse: {
+    title: 'Delete warehouse?',
+    confirmText: 'Delete',
+    description: 'This warehouse will be deactivated.',
+  },
+} as const;
+
+type ApprovalToolName = keyof typeof approvalConfig;
 
 export function Chat({
   messages: initialMessages,
@@ -27,6 +54,8 @@ export function Chat({
   // eslint-disable-next-line
   chat: any;
 }) {
+  const router = useRouter();
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -34,29 +63,97 @@ export function Chat({
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMessage, setNewMessage] = useState('');
 
-  const router = useRouter();
+  const [resolvedChatId, setResolvedChatId] = useState<number | undefined>(
+    chat.id ? Number(chat.id) : undefined,
+  );
 
-  const { messages, sendMessage, status, error } = useChat<ChatUIMessage>({
-    id: chat.id ? String(chat.id) : undefined,
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: '/api/chat',
 
-    messages: initialMessages.map((message) => ({
-      id: String(message.id),
-      role: message.role,
-      parts: [
-        {
-          type: 'text',
-          text: message.content,
+        prepareSendMessagesRequest: ({ id, messages }) => {
+          const lastMessage = messages.at(-1);
+
+          const content =
+            lastMessage?.role === 'user'
+              ? lastMessage.parts
+                  .filter((part) => part.type === 'text')
+                  .map((part) => part.text)
+                  .join('')
+              : undefined;
+
+          return {
+            body: {
+              chatId: resolvedChatId,
+              content,
+              messages,
+              messageId: id,
+            },
+          };
         },
-      ],
-    })),
+      }),
+    [resolvedChatId],
+  );
 
-    onData(dataPart) {
-      if (dataPart.type === 'data-chat') {
-        router.push(`/chat/${dataPart.data.chatId}`);
-        router.refresh();
-      }
-    },
-  });
+  const { messages, sendMessage, addToolApprovalResponse, status, error } =
+    useChat<ChatUIMessage>({
+      id: chat.id ? String(chat.id) : undefined,
+
+      messages: initialMessages.map((message) => ({
+        id: String(message.id),
+        role: message.role,
+        parts: [
+          {
+            type: 'text',
+            text: message.content,
+          },
+        ],
+      })),
+
+      transport,
+
+      sendAutomaticallyWhen: ({ messages }) => {
+        const lastMessage = messages.at(-1);
+
+        return (
+          lastMessage?.parts?.some(
+            (part) =>
+              'state' in part &&
+              part.state === 'approval-responded' &&
+              'approval' in part &&
+              part.approval?.approved === true,
+          ) ?? false
+        );
+      },
+
+      onData(dataPart) {
+        if (dataPart.type === 'data-chat') {
+          setResolvedChatId(dataPart.data.chatId);
+        }
+      },
+
+      onFinish: ({ messages, isError, isAbort, isDisconnect }) => {
+        if (isError || isAbort || isDisconnect) {
+          return;
+        }
+
+        const hasPendingApproval = messages.some((message) =>
+          message.parts.some(
+            (part) =>
+              isErpToolPart(part) && part.state === 'approval-requested',
+          ),
+        );
+
+        if (hasPendingApproval) {
+          return;
+        }
+
+        if (!chat.id && resolvedChatId) {
+          router.replace(`/chat/${resolvedChatId}`);
+        }
+      },
+    });
 
   const isLoading = status === 'submitted' || status === 'streaming';
 
@@ -75,17 +172,9 @@ export function Chat({
     setNewMessage('');
 
     try {
-      await sendMessage(
-        {
-          text: result.data.content,
-        },
-        {
-          body: {
-            chatId: chat.id,
-            content: result.data.content,
-          },
-        },
-      );
+      await sendMessage({
+        text: result.data.content,
+      });
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
@@ -130,6 +219,20 @@ export function Chat({
     });
   }, [messages, status, isAtBottom]);
 
+  const pendingApprovalPart = [...messages]
+    .reverse()
+    .flatMap((message) => [...message.parts].reverse())
+    .find((part) => isErpToolPart(part) && part.state === 'approval-requested');
+
+  const pendingApprovalToolName = pendingApprovalPart
+    ? pendingApprovalPart.type.slice('tool-'.length)
+    : null;
+
+  const pendingApprovalConfig =
+    pendingApprovalToolName && pendingApprovalToolName in approvalConfig
+      ? approvalConfig[pendingApprovalToolName as ApprovalToolName]
+      : null;
+
   const activeToolPart = [...messages]
     .reverse()
     .flatMap((message) => [...message.parts].reverse())
@@ -157,16 +260,37 @@ export function Chat({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
+      {pendingApprovalPart && pendingApprovalConfig && (
+        <ConfirmDialog
+          open
+          title={pendingApprovalConfig.title}
+          description={pendingApprovalConfig.description}
+          confirmText={pendingApprovalConfig.confirmText}
+          onCancel={() => {
+            addToolApprovalResponse({
+              id: pendingApprovalPart.approval.id,
+              approved: false,
+            });
+          }}
+          onConfirm={() => {
+            addToolApprovalResponse({
+              id: pendingApprovalPart.approval.id,
+              approved: true,
+            });
+          }}
+        />
+      )}
+
       <div
-        className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto"
         ref={scrollContainerRef}
         onScroll={handleScroll}
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center">
+          <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <p className="text-2xl font-semibold">How can I help?</p>
 
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground mt-1 text-sm">
               Ask me to work with your ERP data.
             </p>
           </div>
@@ -180,7 +304,7 @@ export function Chat({
                   return (
                     <div
                       key={key}
-                      className={`w-fit max-w-[85%] rounded-lg p-2 ${
+                      className={`w-fit max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                         message.role === 'assistant'
                           ? 'bg-muted text-muted-foreground self-start'
                           : 'bg-primary text-primary-foreground self-end'
@@ -196,7 +320,7 @@ export function Chat({
             )}
 
             {showStatusBubble && (
-              <div className="bg-muted text-muted-foreground w-fit self-start rounded-lg p-2 text-sm">
+              <div className="bg-muted text-muted-foreground w-fit self-start rounded-lg px-3 py-2 text-sm">
                 <span className="animate-pulse">
                   {activeToolName
                     ? getToolStatusText(activeToolName)
@@ -210,26 +334,28 @@ export function Chat({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex w-full items-center gap-2 border-t p-4">
+      <div className="flex w-full items-end gap-2 border-t p-4">
         <Textarea
           ref={textareaRef}
-          className="flex-1 resize-none"
+          className="min-h-10 flex-1 resize-none"
           placeholder="Ask your ERP assistant..."
           value={newMessage}
           disabled={isLoading}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
+          onChange={(event) => {
+            setNewMessage(event.target.value);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
               handleSendMessage();
             }
           }}
         />
 
         <Button
+          className="h-10 w-18 shrink-0"
           disabled={isLoading}
           onClick={handleSendMessage}
-          className="h-10 w-18"
         >
           {isLoading ? 'Sending...' : 'Send'}
         </Button>

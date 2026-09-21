@@ -135,10 +135,11 @@ export function createWarehouseTools(companyId: number) {
 
     deleteWarehouse: tool({
       description:
-        'Soft-delete an active warehouse. Use this tool only when the user explicitly and clearly asks to delete a warehouse. The warehouse ID must identify the intended warehouse. This operation is destructive and should not be performed based on an indirect request, suggestion, or old conversation context.',
+        'Soft-delete an active warehouse. Use this tool only when the user explicitly and clearly asks to delete a warehouse. The warehouse ID must identify the intended warehouse. This operation is destructive and requires user confirmation.',
       inputSchema: z.object({
         warehouseId: z.number().int().positive(),
       }),
+      needsApproval: true,
       execute: ({ warehouseId }) =>
         runTool(
           'deleteWarehouse',

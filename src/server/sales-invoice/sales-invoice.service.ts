@@ -172,20 +172,6 @@ export async function createSalesInvoice(
   const invoiceNumber = await generateSalesInvoiceNumber(companyId);
 
   return db.transaction(async (tx) => {
-    console.log('Creating sales invoice', {
-      ...invoiceDataWithoutItems,
-      companyId,
-      customerId,
-      warehouseId,
-      invoiceNumber,
-      currency: company.currency,
-      status: 'ISSUED',
-      subtotal,
-      discount,
-      tax,
-      total,
-    });
-
     const invoice = await tx.orm.public.SalesInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,

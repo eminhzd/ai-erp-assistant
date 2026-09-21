@@ -30,6 +30,7 @@ export const ChatBtn = ({
 
   const currentChatTitle = chat.title || `Chat ${chat.id}`;
 
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isTitleEditActive, setIsTitleEditActive] = useState(false);
   const [title, setTitle] = useState(currentChatTitle);
   const [isSaving, setIsSaving] = useState(false);
@@ -159,21 +160,25 @@ export const ChatBtn = ({
             <Pencil className="size-3.5" />
           </Button>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground size-7 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDeleteDialogOpen(true);
+            }}
+            aria-label="Delete chat"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+
           <ConfirmDialog
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground size-7 cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
-                aria-label="Delete chat"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            }
+            open={isDeleteDialogOpen}
             title="Delete chat?"
             description="This action cannot be undone."
             confirmText="Delete"
+            onCancel={() => setIsDeleteDialogOpen(false)}
             onConfirm={handleDelete}
           />
         </div>

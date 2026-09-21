@@ -147,10 +147,11 @@ export function createSupplierTools(companyId: number) {
 
     deleteSupplier: tool({
       description:
-        'Soft-delete an active supplier. Use this tool only when the user explicitly and clearly asks to delete a supplier. The supplier ID must identify the intended supplier. This operation is destructive and should not be performed based on an indirect request, suggestion, or old conversation context.',
+        'Soft-delete an active supplier. Use this tool only when the user explicitly and clearly asks to delete a supplier. The supplier ID must identify the intended supplier. This operation is destructive and requires user confirmation.',
       inputSchema: z.object({
         supplierId: z.number().int().positive(),
       }),
+      needsApproval: true,
       execute: ({ supplierId }) =>
         runTool(
           'deleteSupplier',

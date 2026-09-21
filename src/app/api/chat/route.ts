@@ -1,10 +1,11 @@
 import { google } from '@ai-sdk/google';
 import {
+  convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  stepCountIs,
   streamText,
   toUIMessageStream,
-  stepCountIs,
 } from 'ai';
 
 import * as z from 'zod';
@@ -12,16 +13,15 @@ import * as z from 'zod';
 import { auth } from '@/auth';
 import { createChatWithMessage, getChatById } from '@/server/chat/chat.service';
 import { createErpTools } from '@/server/ai/erp-tools';
-import {
-  createMessage,
-  getMessagesByChatId,
-} from '@/server/messages/messages.service';
+import { createMessage } from '@/server/messages/messages.service';
 
 import { ERP_SYSTEM_PROMPT } from '@/server/ai/system-prompt';
+import type { ChatUIMessage } from '@/types/chat';
 
 const chatRequestSchema = z.object({
   chatId: z.number().int().positive().optional(),
-  content: z.string().trim().min(1).max(3000),
+  content: z.string().trim().min(1).max(3000).optional(),
+  messages: z.array(z.any()).optional(),
 });
 
 export async function POST(req: Request) {
@@ -53,11 +53,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const { chatId, content } = validation.data;
+    const { chatId, content, messages: uiMessages } = validation.data;
 
     let currentChatId = chatId;
 
+    /*
+     * Create the chat on the first user message.
+     *
+     * Approval continuation already has an existing chatId,
+     * so it never enters this branch.
+     */
     if (!currentChatId) {
+      if (!content) {
+        return Response.json(
+          {
+            error: 'Content is required when creating a new chat',
+          },
+          { status: 400 },
+        );
+      }
+
       const chat = await createChatWithMessage(companyId, {
         content,
       });
@@ -67,28 +82,49 @@ export async function POST(req: Request) {
       const chat = await getChatById(companyId, currentChatId);
 
       if (!chat) {
-        return Response.json({ error: 'Chat not found' }, { status: 404 });
+        return Response.json(
+          {
+            error: 'Chat not found',
+          },
+          { status: 404 },
+        );
       }
 
-      await createMessage(companyId, {
-        chatId: currentChatId,
-        role: 'user',
-        content,
-      });
+      /*
+       * Save a user message only for a normal user submission.
+       *
+       * During approval continuation `content` is undefined,
+       * so nothing is written here.
+       */
+      if (content) {
+        await createMessage(companyId, {
+          chatId: currentChatId,
+          role: 'user',
+          content,
+        });
+      }
     }
 
-    const messages = await getMessagesByChatId(companyId, currentChatId);
+    if (!uiMessages) {
+      return Response.json(
+        {
+          error: 'Messages are required',
+        },
+        { status: 400 },
+      );
+    }
 
-    const modelMessages = messages.map((message) => ({
-      role: message.role as 'user' | 'assistant',
-      content: message.content,
-    }));
+    const tools = createErpTools(companyId);
+
+    const modelMessages = await convertToModelMessages(
+      uiMessages as Omit<ChatUIMessage, 'id'>[],
+    );
 
     const streamResult = streamText({
       model: google('gemini-3.5-flash-lite'),
       system: ERP_SYSTEM_PROMPT,
       messages: modelMessages,
-      tools: createErpTools(companyId),
+      tools,
       stopWhen: stepCountIs(8),
       maxRetries: 0,
     });
@@ -116,7 +152,7 @@ export async function POST(req: Request) {
             const text = await streamResult.text;
 
             await createMessage(companyId, {
-              chatId: currentChatId,
+              chatId: currentChatId!,
               role: 'assistant',
               content: text,
             });
@@ -124,7 +160,7 @@ export async function POST(req: Request) {
             writer.write({
               type: 'data-chat',
               data: {
-                chatId: currentChatId,
+                chatId: currentChatId!,
               },
               transient: true,
             });

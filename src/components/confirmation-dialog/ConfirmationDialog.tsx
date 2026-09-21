@@ -1,34 +1,33 @@
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
+
 import { Button } from '@/components/ui/button';
 
 type ConfirmDialogProps = {
-  trigger: React.ReactElement;
+  open: boolean;
+  onCancel: () => void;
   title: string;
   description: string;
   confirmText?: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 };
 
 export function ConfirmDialog({
-  trigger,
+  open,
+  onCancel,
   title,
   description,
-  confirmText,
+  confirmText = 'Confirm',
   onConfirm,
 }: ConfirmDialogProps) {
   return (
-    <Dialog>
-      <DialogTrigger render={trigger} />
-
+    <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -36,7 +35,9 @@ export function ConfirmDialog({
         </DialogHeader>
 
         <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
 
           <Button variant="destructive" onClick={onConfirm}>
             {confirmText}

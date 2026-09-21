@@ -146,10 +146,11 @@ export function createCustomerTools(companyId: number) {
 
     deleteCustomer: tool({
       description:
-        'Soft-delete an active customer. Use this tool only when the user explicitly and clearly asks to delete a customer. The customer ID must identify the intended customer. This operation is destructive and should not be performed based on an indirect request, suggestion, or old conversation context.',
+        'Soft-delete an active customer. Use this tool only when the user explicitly and clearly asks to delete a customer. This operation is destructive and requires user confirmation.',
       inputSchema: z.object({
         customerId: z.number().int().positive(),
       }),
+      needsApproval: true,
       execute: ({ customerId }) =>
         runTool(
           'deleteCustomer',

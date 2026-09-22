@@ -27,7 +27,7 @@ import type { ChatUIMessage } from '@/types/chat';
 const chatRequestSchema = z.object({
   chatId: z.number().int().positive().optional(),
   content: z.string().trim().min(1).max(3000).optional(),
-  messages: z.array(z.any()).optional(),
+  messages: z.array(z.unknown()).optional(),
 });
 
 export async function POST(req: Request) {

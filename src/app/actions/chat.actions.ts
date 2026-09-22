@@ -2,8 +2,6 @@
 
 import { auth } from '@/auth';
 import {
-  // createChatWithMessage,
-  // getChatById,
   getChats,
   deleteChat,
   updateChatTitle,
@@ -21,74 +19,6 @@ const updateChatTitleSchema = z.object({
   chatId: z.number().int().positive(),
   title: z.string().trim().min(1).max(100),
 });
-
-// export async function createChatWithMessageAction(
-//   chatData: CreateChatWithMessageClientInput,
-// ): Promise<ActionResult<Awaited<ReturnType<typeof createChatWithMessage>>>> {
-//   const session = await auth();
-
-//   if (!session?.user) {
-//     return {
-//       data: null,
-//       error: 'Unauthorized',
-//       success: false,
-//     };
-//   }
-
-//   const companyId = session.user.companyId;
-
-//   try {
-//     const response = await createChatWithMessage(companyId, chatData);
-
-//     return {
-//       data: response,
-//       error: null,
-//       success: true,
-//     };
-//   } catch (error) {
-//     console.error('Error creating chat:', error);
-
-//     return {
-//       data: null,
-//       error: 'Failed to create chat',
-//       success: false,
-//     };
-//   }
-// }
-
-// export async function getChatByIdAction(
-//   chatId: number,
-// ): Promise<ActionResult<Awaited<ReturnType<typeof getChatById>>>> {
-//   const session = await auth();
-
-//   if (!session?.user) {
-//     return {
-//       data: null,
-//       error: 'Unauthorized',
-//       success: false,
-//     };
-//   }
-
-//   const companyId = session.user.companyId;
-
-//   try {
-//     const response = await getChatById(companyId, chatId);
-
-//     return {
-//       data: response,
-//       error: null,
-//       success: true,
-//     };
-//   } catch (error) {
-//     console.error('Error getting chat by ID:', error);
-
-//     return {
-//       data: null,
-//       error: 'Failed to get chat',
-//       success: false,
-//     };
-//   }
-// }
 
 export async function getChatsAction(): Promise<
   ActionResult<Awaited<ReturnType<typeof getChats>>>

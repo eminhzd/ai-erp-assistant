@@ -5,7 +5,16 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-export const MenuBtn = () => {
+import { SidebarContent } from '../layout/sidebar/SidebarContent';
+
+type MenuBtnProps = {
+  chats: {
+    id: number;
+    title: string | null;
+  }[];
+};
+
+export const MenuBtn = ({ chats }: MenuBtnProps) => {
   return (
     <Sheet>
       <SheetTrigger
@@ -21,10 +30,8 @@ export const MenuBtn = () => {
         }
       />
 
-      <SheetContent side="left">
-        <div className="flex h-full w-full items-center justify-center">
-          <h1>Coming soon...</h1>
-        </div>
+      <SheetContent side="left" className="w-64 p-3">
+        <SidebarContent chats={chats} />
       </SheetContent>
     </Sheet>
   );

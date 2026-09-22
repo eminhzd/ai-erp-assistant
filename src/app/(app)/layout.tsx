@@ -23,7 +23,7 @@ export default async function AppLayout({
     <main className="flex h-screen w-screen">
       <Sidebar chats={chats} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header />
+        <Header chats={chats} />
         {children}
       </div>
     </main>

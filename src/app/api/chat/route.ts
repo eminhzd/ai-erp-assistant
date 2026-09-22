@@ -1,4 +1,5 @@
 import { google } from '@ai-sdk/google';
+
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -11,8 +12,13 @@ import {
 import * as z from 'zod';
 
 import { auth } from '@/auth';
-import { createChatWithMessage, getChatById } from '@/server/chat/chat.service';
+import {
+  createChatWithMessage,
+  getChatById,
+  updateChatTitle,
+} from '@/server/chat/chat.service';
 import { createErpTools } from '@/server/ai/erp-tools';
+import { generateChatTitle } from '@/server/ai/chat-title';
 import { createMessage } from '@/server/messages/messages.service';
 
 import { ERP_SYSTEM_PROMPT } from '@/server/ai/system-prompt';
@@ -54,6 +60,7 @@ export async function POST(req: Request) {
     }
 
     const { chatId, content, messages: uiMessages } = validation.data;
+    const isNewChat = !chatId;
 
     let currentChatId = chatId;
 
@@ -90,12 +97,6 @@ export async function POST(req: Request) {
         );
       }
 
-      /*
-       * Save a user message only for a normal user submission.
-       *
-       * During approval continuation `content` is undefined,
-       * so nothing is written here.
-       */
       if (content) {
         await createMessage(companyId, {
           chatId: currentChatId,
@@ -132,6 +133,16 @@ export async function POST(req: Request) {
     return createUIMessageStreamResponse({
       stream: createUIMessageStream({
         async execute({ writer }) {
+          if (isNewChat) {
+            writer.write({
+              type: 'data-chat',
+              data: {
+                chatId: currentChatId!,
+              },
+              transient: true,
+            });
+          }
+
           const uiStream = toUIMessageStream({
             stream: streamResult.stream,
           });
@@ -157,13 +168,15 @@ export async function POST(req: Request) {
               content: text,
             });
 
-            writer.write({
-              type: 'data-chat',
-              data: {
-                chatId: currentChatId!,
-              },
-              transient: true,
-            });
+            if (isNewChat && content) {
+              try {
+                const title = await generateChatTitle(content);
+
+                await updateChatTitle(companyId, currentChatId!, title);
+              } catch (error) {
+                console.error('Failed to generate chat title:', error);
+              }
+            }
           } finally {
             reader.releaseLock();
           }
@@ -174,7 +187,9 @@ export async function POST(req: Request) {
     console.error('Chat API error:', error);
 
     return Response.json(
-      { error: 'Failed to process chat request' },
+      {
+        error: 'Failed to process chat request',
+      },
       { status: 500 },
     );
   }

@@ -1,5 +1,4 @@
 import { db } from '@/prisma/db';
-
 import { or } from '@prisma/orm-postgres/orm-client';
 
 export type ProductCreateInput = {

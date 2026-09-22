@@ -42,6 +42,13 @@
               { "name": "CANCELLED", "value": "CANCELLED" }
             ]
           },
+          "MessageRole": {
+            "codecId": "pg/text@1",
+            "members": [
+              { "name": "USER", "value": "USER" },
+              { "name": "ASSISTANT", "value": "ASSISTANT" }
+            ]
+          },
           "StockMovementType": {
             "codecId": "pg/text@1",
             "members": [
@@ -314,7 +321,13 @@
               },
               "role": {
                 "nullable": false,
-                "type": { "codecId": "pg/text@1", "kind": "scalar" }
+                "type": { "codecId": "pg/text@1", "kind": "scalar" },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "MessageRole",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
               }
             },
             "relations": {
@@ -1586,6 +1599,13 @@
               "uniques": [{ "columns": ["companyId", "name"] }]
             },
             "messages": {
+              "checks": [
+                {
+                  "expression": "\"role\" IN ('USER', 'ASSISTANT')",
+                  "name": "messages_role_check_e8086ca8",
+                  "prefix": "messages_role_check"
+                }
+              ],
               "columns": {
                 "chatId": {
                   "codecId": "pg/int4@1",
@@ -1620,7 +1640,13 @@
                 "role": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": false
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "MessageRole",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
                 }
               },
               "foreignKeys": [
@@ -2860,6 +2886,10 @@
               "kind": "valueSet",
               "values": ["ISSUED", "PAID", "CANCELLED"]
             },
+            "MessageRole": {
+              "kind": "valueSet",
+              "values": ["USER", "ASSISTANT"]
+            },
             "StockMovementType": {
               "kind": "valueSet",
               "values": ["PURCHASE", "SALE", "ADJUSTMENT_IN", "ADJUSTMENT_OUT"]
@@ -2870,7 +2900,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d5d88b9aa7d78cf03841e07c09c5425b1fe383f35b18f5b2019dbb6b140343b7"
+    "storageHash": "1f54fc2ea110385aaa7880c490149d2d7aa85099bad3e8ebc1a6dde4c7de0e45"
   },
   "target": "postgres",
   "targetFamily": "sql"

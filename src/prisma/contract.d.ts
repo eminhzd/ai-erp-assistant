@@ -30,7 +30,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d5d88b9aa7d78cf03841e07c09c5425b1fe383f35b18f5b2019dbb6b140343b7'>;
+  StorageHashBase<'1f54fc2ea110385aaa7880c490149d2d7aa85099bad3e8ebc1a6dde4c7de0e45'>;
 export type ExecutionHash =
   ExecutionHashBase<'891bf0d86f923a373716b72b491408200d7de0bb02f347f0ce6b531d342da940'>;
 export type ProfileHash =
@@ -529,7 +529,7 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly companyId: CodecTypes['pg/int4@1']['output'];
       readonly chatId: CodecTypes['pg/int4@1']['output'];
-      readonly role: CodecTypes['pg/text@1']['output'];
+      readonly role: 'USER' | 'ASSISTANT';
       readonly content: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['output'];
     };
@@ -690,7 +690,7 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly companyId: CodecTypes['pg/int4@1']['input'];
       readonly chatId: CodecTypes['pg/int4@1']['input'];
-      readonly role: CodecTypes['pg/text@1']['input'];
+      readonly role: 'USER' | 'ASSISTANT';
       readonly content: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['input'];
     };
@@ -853,7 +853,7 @@ export type StorageColumnTypes = {
       readonly content: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
-      readonly role: CodecTypes['pg/text@1']['output'];
+      readonly role: 'USER' | 'ASSISTANT';
     };
     readonly product: {
       readonly companyId: CodecTypes['pg/int4@1']['output'];
@@ -1014,7 +1014,7 @@ export type StorageColumnInputTypes = {
       readonly content: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
-      readonly role: CodecTypes['pg/text@1']['input'];
+      readonly role: 'USER' | 'ASSISTANT';
     };
     readonly product: {
       readonly companyId: CodecTypes['pg/int4@1']['input'];
@@ -2697,6 +2697,10 @@ type ContractBase = Omit<
             readonly InvoiceStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['ISSUED', 'PAID', 'CANCELLED'];
+            };
+            readonly MessageRole: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['USER', 'ASSISTANT'];
             };
             readonly StockMovementType: {
               readonly kind: 'valueSet';
@@ -4573,6 +4577,13 @@ type ContractBase = Omit<
                 readonly name: 'ADJUSTMENT_OUT';
                 readonly value: 'ADJUSTMENT_OUT';
               },
+            ];
+          };
+          readonly MessageRole: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'USER'; readonly value: 'USER' },
+              { readonly name: 'ASSISTANT'; readonly value: 'ASSISTANT' },
             ];
           };
         };

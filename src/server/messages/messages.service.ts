@@ -2,7 +2,7 @@ import { db } from '@/prisma/db';
 
 export type MessageCreateInput = {
   chatId: number;
-  role: string;
+  role: 'user' | 'assistant';
   content: string;
 };
 
@@ -13,6 +13,7 @@ export async function createMessage(
   return db.orm.public.Message.create({
     ...messageData,
     companyId,
+    role: messageData.role === 'user' ? 'USER' : 'ASSISTANT',
   });
 }
 

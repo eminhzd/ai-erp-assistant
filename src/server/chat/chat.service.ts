@@ -20,7 +20,7 @@ export async function createChatWithMessage(
     await tx.orm.public.Message.create({
       companyId,
       chatId: chat.id,
-      role: 'user',
+      role: 'USER',
       content: data.content,
     });
 

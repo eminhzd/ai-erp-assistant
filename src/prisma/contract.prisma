@@ -21,6 +21,11 @@ enum StockMovementType {
   ADJUSTMENT_OUT
 }
 
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
 model Company {
   id       Int      @id @default(autoincrement())
   name     String
@@ -324,7 +329,7 @@ model Message {
   id        Int      @id @default(autoincrement())
   companyId Int
   chatId    Int
-  role      String
+  role      MessageRole
   content   String
   createdAt DateTime @default(now())
 

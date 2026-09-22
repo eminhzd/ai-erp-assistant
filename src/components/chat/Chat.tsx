@@ -16,6 +16,8 @@ import { ConfirmDialog } from '@/components/confirmation-dialog/ConfirmationDial
 import { isErpToolPart, type ChatUIMessage } from '@/types/chat';
 import { getToolStatusText } from './ToolStatus';
 
+import type { InitialMessage } from '@/types/chat';
+
 const messageSchema = z.object({
   content: z.string().trim().min(1).max(3000),
 });
@@ -45,20 +47,25 @@ const approvalConfig = {
 
 type ApprovalToolName = keyof typeof approvalConfig;
 
+type Chat = {
+  id: number | null;
+};
+
 export function Chat({
   messages: initialMessages,
   chat,
 }: {
-  // eslint-disable-next-line
-  messages: any[];
-  // eslint-disable-next-line
-  chat: any;
+  messages: InitialMessage[];
+  chat: Chat;
 }) {
   const router = useRouter();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const resolvedChatIdRef = useRef<number | undefined>(
+    chat.id ? Number(chat.id) : undefined,
+  );
 
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMessage, setNewMessage] = useState('');
@@ -129,7 +136,10 @@ export function Chat({
 
       onData(dataPart) {
         if (dataPart.type === 'data-chat') {
-          setResolvedChatId(dataPart.data.chatId);
+          const chatId = dataPart.data.chatId;
+
+          resolvedChatIdRef.current = chatId;
+          setResolvedChatId(chatId);
         }
       },
 
@@ -149,8 +159,11 @@ export function Chat({
           return;
         }
 
+        const resolvedChatId = resolvedChatIdRef.current;
+
         if (!chat.id && resolvedChatId) {
           router.replace(`/chat/${resolvedChatId}`);
+          router.refresh();
         }
       },
     });

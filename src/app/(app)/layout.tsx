@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 
-export default async function ChatLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

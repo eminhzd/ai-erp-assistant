@@ -6,6 +6,7 @@ import { getChatById } from '@/server/chat/chat.service';
 import { getMessagesByChatId } from '@/server/messages/messages.service';
 
 import { Chat } from '@/components/chat/Chat';
+import type { InitialMessage } from '@/types/chat';
 
 export default async function ChatPage({
   params,
@@ -19,7 +20,6 @@ export default async function ChatPage({
   }
 
   const { id } = await params;
-
   const chatId = Number(id);
 
   if (!Number.isInteger(chatId) || chatId <= 0) {
@@ -27,7 +27,6 @@ export default async function ChatPage({
   }
 
   const companyId = session.user.companyId;
-
   const chat = await getChatById(companyId, chatId);
 
   if (!chat) {
@@ -35,6 +34,11 @@ export default async function ChatPage({
   }
 
   const messages = await getMessagesByChatId(companyId, chatId);
+  const initialMessages: InitialMessage[] = messages.map((message) => ({
+    id: message.id,
+    role: message.role === 'USER' ? 'user' : 'assistant',
+    content: message.content,
+  }));
 
-  return <Chat messages={messages} chat={chat} />;
+  return <Chat messages={initialMessages} chat={chat} />;
 }

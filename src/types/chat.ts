@@ -18,3 +18,9 @@ export function isErpToolPart(
 ): part is ErpToolPart {
   return part.type.startsWith('tool-');
 }
+
+export type InitialMessage = {
+  id: number;
+  role: 'user' | 'assistant';
+  content: string;
+};

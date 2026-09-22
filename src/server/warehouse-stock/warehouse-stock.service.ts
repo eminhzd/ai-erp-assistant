@@ -75,6 +75,15 @@ export async function createWarehouseStock(
   });
 }
 
+export async function getWarehouseStocksByCompanyId(companyId: number) {
+  const stocks = await db.orm.public.WarehouseStock.where({ companyId })
+    .include('product', (product) => product.select('name', 'sku', 'unit'))
+    .include('warehouse', (warehouse) => warehouse.select('name'))
+    .all();
+
+  return stocks;
+}
+
 export async function getWarehouseStocksByWarehouseId(
   companyId: number,
   warehouseId: number,

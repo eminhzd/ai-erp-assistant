@@ -1,7 +1,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
+
 import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -9,11 +11,9 @@ import {
   deleteChatAction,
   updateChatTitleAction,
 } from '@/app/actions/chat.actions';
-
 import { ConfirmDialog } from '@/components/confirmation-dialog/ConfirmationDialog';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 export const ChatBtn = ({
@@ -23,6 +23,7 @@ export const ChatBtn = ({
 }) => {
   const router = useRouter();
   const params = useParams();
+
   const selectedChatId = params.id;
   const isSelected = Number(selectedChatId) === chat.id;
 
@@ -137,14 +138,16 @@ export const ChatBtn = ({
         <Button
           variant="ghost"
           className={cn(
-            'w-full cursor-pointer justify-start rounded-lg px-3 pr-16 text-left text-xs',
+            'w-full cursor-pointer justify-start rounded-lg px-3 text-left text-xs',
             isSelected
               ? 'bg-black/10! group-hover:bg-black/10! dark:bg-white/15! dark:group-hover:bg-white/15!'
               : 'bg-black/5! group-hover:bg-black/10! dark:bg-white/10! dark:group-hover:bg-white/15!',
           )}
           onClick={() => router.push(`/chat/${chat.id}`)}
         >
-          {chat.title || `Chat ${chat.id}`}
+          <span className="block min-w-0 overflow-hidden mask-[linear-gradient(to_right,black_0%,black_calc(100%-2rem),transparent_100%)] whitespace-nowrap group-hover:mask-[linear-gradient(to_right,black_0%,black_calc(100%-5rem),transparent_calc(100%-2rem),transparent_100%)]">
+            {currentChatTitle}
+          </span>
         </Button>
       )}
 

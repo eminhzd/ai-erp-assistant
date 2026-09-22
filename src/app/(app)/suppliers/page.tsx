@@ -1,9 +1,10 @@
-import { MoreHorizontal, Plus, Search } from 'lucide-react';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+
+import { getSuppliersByCompanyId } from '@/server/suppliers/supplier.service';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -13,50 +14,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const suppliers = [
-  {
-    id: 1,
-    name: 'Food Supplier LLC',
-    email: 'info@foodsupplier.az',
-    phone: '+994 50 111 22 33',
-    invoices: 32,
-    status: 'Active',
-  },
-  {
-    id: 2,
-    name: 'Coca-Cola Azerbaijan',
-    email: 'sales@coca-cola.az',
-    phone: '+994 51 222 33 44',
-    invoices: 21,
-    status: 'Active',
-  },
-  {
-    id: 3,
-    name: 'Baku Beverage',
-    email: 'contact@bakubeverage.az',
-    phone: '+994 55 333 44 55',
-    invoices: 16,
-    status: 'Active',
-  },
-  {
-    id: 4,
-    name: 'Azerbaijan Food Import',
-    email: 'info@afi.az',
-    phone: '+994 70 444 55 66',
-    invoices: 9,
-    status: 'Inactive',
-  },
-  {
-    id: 5,
-    name: 'Fresh Distribution',
-    email: 'hello@freshdistribution.az',
-    phone: '+994 77 555 66 77',
-    invoices: 14,
-    status: 'Active',
-  },
-];
+export default async function SuppliersPage() {
+  const session = await auth();
 
-export default function SuppliersPage() {
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  const companyId = session.user.companyId;
+  const suppliers = await getSuppliersByCompanyId(companyId);
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-7xl space-y-6 p-6">
@@ -68,11 +35,6 @@ export default function SuppliersPage() {
               Manage your suppliers and their information.
             </p>
           </div>
-
-          <Button>
-            <Plus />
-            Add Supplier
-          </Button>
         </div>
 
         <Card>
@@ -81,32 +43,27 @@ export default function SuppliersPage() {
           </CardHeader>
 
           <CardContent>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative flex-1">
-                  <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Invoices</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
 
-                  <Input placeholder="Search suppliers..." className="pl-9" />
-                </div>
-
-                <Button variant="outline">Filters</Button>
-              </div>
-
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
+                <TableBody>
+                  {suppliers.length === 0 ? (
                     <TableRow>
-                      <TableHead>Supplier</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Invoices</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-12" />
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No customers found.
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {suppliers.map((supplier) => (
+                  ) : (
+                    suppliers.map((supplier) => (
                       <TableRow key={supplier.id}>
                         <TableCell className="font-medium">
                           {supplier.name}
@@ -125,30 +82,19 @@ export default function SuppliersPage() {
                         <TableCell>
                           <Badge
                             variant={
-                              supplier.status === 'Active'
+                              supplier.isActive === true
                                 ? 'default'
                                 : 'secondary'
                             }
                           >
-                            {supplier.status}
+                            {supplier.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
-
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                          >
-                            <MoreHorizontal />
-                            <span className="sr-only">Supplier actions</span>
-                          </Button>
-                        </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

@@ -219,9 +219,16 @@ export async function createSalesInvoice(
 }
 
 export async function getSalesInvoicesByCompanyId(companyId: number) {
-  return db.orm.public.SalesInvoice.where({
-    companyId,
-  }).all();
+  const invoices = await db.orm.public.SalesInvoice.where({ companyId })
+    .include('customer', (customer) => customer.select('name'))
+    .include('items', (item) => item.select('id'))
+    .orderBy((invoice) => invoice.createdAt.desc())
+    .all();
+
+  return invoices.map((invoice) => ({
+    ...invoice,
+    itemsCount: invoice.items.length,
+  }));
 }
 
 export async function getSalesInvoiceById(companyId: number, id: number) {

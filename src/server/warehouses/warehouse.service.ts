@@ -21,10 +21,18 @@ export async function createWarehouse(
 }
 
 export async function getWarehousesByCompanyId(companyId: number) {
-  return db.orm.public.Warehouse.where({
-    companyId,
-    isActive: true,
-  }).all();
+  const warehouses = await db.orm.public.Warehouse.where({ companyId })
+    .include('stocks', (stock) => stock.select('quantity'))
+    .all();
+
+  return warehouses.map((warehouse) => ({
+    ...warehouse,
+    products: warehouse.stocks.length,
+    units: warehouse.stocks.reduce(
+      (total, stock) => total + Number(stock.quantity),
+      0,
+    ),
+  }));
 }
 
 export async function getWarehouseById(companyId: number, warehouseId: number) {
@@ -60,6 +68,6 @@ export async function findWarehouses(companyId: number, query: string) {
   const normalizedQuery = query.trim();
 
   return db.orm.public.Warehouse.where({ companyId, isActive: true })
-    .where((üarehouse) => üarehouse.name.ilike(`%${normalizedQuery}%`))
+    .where((warehouse) => warehouse.name.ilike(`%${normalizedQuery}%`))
     .all();
 }

@@ -1,9 +1,10 @@
-import { MoreHorizontal, Plus, Search } from 'lucide-react';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+
+import { getProductsByCompanyId } from '@/server/products/product.service';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -13,71 +14,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const products = [
-  {
-    id: 1,
-    name: 'Coca-Cola 0.5L',
-    sku: 'CC-05',
-    category: 'Drinks',
-    price: '$1.20',
-    stock: 124,
-    status: 'In Stock',
-  },
-  {
-    id: 2,
-    name: 'Pepsi 0.5L',
-    sku: 'PP-05',
-    category: 'Drinks',
-    price: '$1.10',
-    stock: 86,
-    status: 'In Stock',
-  },
-  {
-    id: 3,
-    name: 'Red Bull 250ml',
-    sku: 'RB-25',
-    category: 'Energy Drinks',
-    price: '$2.40',
-    stock: 7,
-    status: 'Low Stock',
-  },
-  {
-    id: 4,
-    name: 'Fanta Orange 0.5L',
-    sku: 'FA-05',
-    category: 'Drinks',
-    price: '$1.15',
-    stock: 8,
-    status: 'Low Stock',
-  },
-  {
-    id: 5,
-    name: 'Lay’s Classic 150g',
-    sku: 'LY-15',
-    category: 'Snacks',
-    price: '$2.10',
-    stock: 52,
-    status: 'In Stock',
-  },
-];
+export default async function ProductsPage() {
+  const session = await auth();
 
-export default function ProductsPage() {
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  const companyId = session.user.companyId;
+  const products = await getProductsByCompanyId(companyId);
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-7xl space-y-6 p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
 
-            <p className="text-muted-foreground text-sm">
-              Manage your products, pricing, and inventory.
-            </p>
-          </div>
-
-          <Button>
-            <Plus />
-            Add Product
-          </Button>
+          <p className="text-muted-foreground text-sm">
+            Manage your products, pricing, and inventory.
+          </p>
         </div>
 
         <Card>
@@ -86,33 +41,28 @@ export default function ProductsPage() {
           </CardHeader>
 
           <CardContent>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative flex-1">
-                  <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead>Sale Price</TableHead>
+                    <TableHead>Purchase Price</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
 
-                  <Input placeholder="Search products..." className="pl-9" />
-                </div>
-
-                <Button variant="outline">Filters</Button>
-              </div>
-
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
+                <TableBody>
+                  {products.length === 0 ? (
                     <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-12" />
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        No products found.
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {products.map((product) => (
+                  ) : (
+                    products.map((product) => (
                       <TableRow key={product.id}>
                         <TableCell className="font-medium">
                           {product.name}
@@ -123,40 +73,25 @@ export default function ProductsPage() {
                         </TableCell>
 
                         <TableCell className="text-muted-foreground">
-                          {product.category}
+                          {product.unit}
                         </TableCell>
 
-                        <TableCell>{product.price}</TableCell>
+                        <TableCell>{product.salePrice}</TableCell>
 
-                        <TableCell>{product.stock}</TableCell>
+                        <TableCell>{product.purchasePrice}</TableCell>
 
                         <TableCell>
                           <Badge
-                            variant={
-                              product.status === 'Low Stock'
-                                ? 'destructive'
-                                : 'default'
-                            }
+                            variant={product.isActive ? 'default' : 'secondary'}
                           >
-                            {product.status}
+                            {product.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
-
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                          >
-                            <MoreHorizontal />
-                            <span className="sr-only">Product actions</span>
-                          </Button>
-                        </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

@@ -27,10 +27,14 @@ export async function createCustomer(
 }
 
 export async function getCustomersByCompanyId(companyId: number) {
-  return db.orm.public.Customer.where({
-    companyId,
-    isActive: true,
-  }).all();
+  const customers = await db.orm.public.Customer.where({ companyId })
+    .include('salesInvoices', (invoice) => invoice.select('id'))
+    .all();
+
+  return customers.map((customer) => ({
+    ...customer,
+    invoices: customer.salesInvoices.length,
+  }));
 }
 
 export async function getCustomerById(companyId: number, customerId: number) {

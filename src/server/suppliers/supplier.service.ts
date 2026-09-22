@@ -27,10 +27,14 @@ export async function createSupplier(
 }
 
 export async function getSuppliersByCompanyId(companyId: number) {
-  return db.orm.public.Supplier.where({
-    companyId,
-    isActive: true,
-  }).all();
+  const suppliers = await db.orm.public.Supplier.where({ companyId })
+    .include('purchaseInvoices', (invoice) => invoice.select('id'))
+    .all();
+
+  return suppliers.map((supplier) => ({
+    ...supplier,
+    invoices: supplier.purchaseInvoices.length,
+  }));
 }
 
 export async function getSupplierById(companyId: number, supplierId: number) {

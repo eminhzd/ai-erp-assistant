@@ -11,11 +11,11 @@ type SidebarProps = {
 };
 
 const navigation = [
-  { label: 'Dashboard', href: '/dashboard' },
   { label: 'Customers', href: '/customers' },
   { label: 'Suppliers', href: '/suppliers' },
   { label: 'Products', href: '/products' },
   { label: 'Warehouses', href: '/warehouses' },
+  { label: 'Inventory', href: '/inventory' },
   { label: 'Sales', href: '/sales' },
   { label: 'Purchases', href: '/purchases' },
 ];

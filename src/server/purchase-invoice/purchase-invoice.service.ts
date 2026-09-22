@@ -218,9 +218,16 @@ export async function createPurchaseInvoice(
 }
 
 export async function getPurchaseInvoicesByCompanyId(companyId: number) {
-  return db.orm.public.PurchaseInvoice.where({
-    companyId,
-  }).all();
+  const invoices = await db.orm.public.PurchaseInvoice.where({ companyId })
+    .include('supplier', (supplier) => supplier.select('name'))
+    .include('items', (item) => item.select('id'))
+    .orderBy((invoice) => invoice.createdAt.desc())
+    .all();
+
+  return invoices.map((invoice) => ({
+    ...invoice,
+    itemsCount: invoice.items.length,
+  }));
 }
 
 export async function getPurchaseInvoiceById(companyId: number, id: number) {

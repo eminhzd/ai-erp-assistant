@@ -1,9 +1,8 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 
-import { getWarehousesByCompanyId } from '@/server/warehouses/warehouse.service';
+import { getWarehouseStocksByCompanyId } from '@/server/warehouse-stock/warehouse-stock.service';
 
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -14,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export default async function WarehousesPage() {
+export default async function InventoryPage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -22,22 +21,22 @@ export default async function WarehousesPage() {
   }
 
   const companyId = session.user.companyId;
-  const warehouses = await getWarehousesByCompanyId(companyId);
+  const stocks = await getWarehouseStocksByCompanyId(companyId);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-7xl space-y-6 p-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Warehouses</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Inventory</h1>
 
           <p className="text-muted-foreground text-sm">
-            Manage your warehouses and inventory locations.
+            Current stock levels across your warehouses.
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Warehouses</CardTitle>
+            <CardTitle>Inventory</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -45,44 +44,38 @@ export default async function WarehousesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>SKU</TableHead>
                     <TableHead>Warehouse</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead>Units</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Unit</TableHead>
                   </TableRow>
                 </TableHeader>
 
                 <TableBody>
-                  {warehouses.length === 0 ? (
+                  {stocks.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center">
-                        No warehouses found.
+                        No inventory found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    warehouses.map((warehouse) => (
-                      <TableRow key={warehouse.id}>
+                    stocks.map((stock) => (
+                      <TableRow key={stock.id}>
                         <TableCell className="font-medium">
-                          {warehouse.name}
+                          {stock.product.name}
                         </TableCell>
 
                         <TableCell className="text-muted-foreground">
-                          {warehouse.address ?? '—'}
+                          {stock.product.sku}
                         </TableCell>
 
-                        <TableCell>{warehouse.products}</TableCell>
+                        <TableCell>{stock.warehouse.name}</TableCell>
 
-                        <TableCell>{warehouse.units}</TableCell>
+                        <TableCell>{stock.quantity}</TableCell>
 
-                        <TableCell>
-                          <Badge
-                            variant={
-                              warehouse.isActive ? 'default' : 'secondary'
-                            }
-                          >
-                            {warehouse.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
+                        <TableCell className="text-muted-foreground">
+                          {stock.product.unit}
                         </TableCell>
                       </TableRow>
                     ))

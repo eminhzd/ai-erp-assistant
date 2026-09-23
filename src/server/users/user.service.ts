@@ -31,6 +31,17 @@ export async function registerUser({
       name: companyName,
     });
 
+    await tx.orm.public.InvoiceSequence.createAll([
+      {
+        companyId: company.id,
+        type: 'SALES',
+      },
+      {
+        companyId: company.id,
+        type: 'PURCHASE',
+      },
+    ]);
+
     const user = await tx.orm.public.User.create({
       email,
       passwordHash,

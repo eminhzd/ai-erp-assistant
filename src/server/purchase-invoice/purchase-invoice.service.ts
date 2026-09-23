@@ -1,5 +1,12 @@
 import { db } from '@/prisma/db';
 
+import { getProductById } from '../products/product.service';
+import { createPurchaseInvoiceItemInTransaction } from '../purchase-invoice-items/purchase-invoice-items.service';
+import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
+import { getSupplierById } from '../suppliers/supplier.service';
+import { getWarehouseById } from '../warehouses/warehouse.service';
+import { reserveInvoiceNumber } from '../invoice-sequences/invoice-sequence.service';
+
 import {
   addDecimal,
   compareDecimal,
@@ -10,12 +17,6 @@ import {
 } from '@/lib/decimal';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
-
-import { getProductById } from '../products/product.service';
-import { createPurchaseInvoiceItemInTransaction } from '../purchase-invoice-items/purchase-invoice-items.service';
-import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
-import { getSupplierById } from '../suppliers/supplier.service';
-import { getWarehouseById } from '../warehouses/warehouse.service';
 
 export type PurchaseInvoiceItemInput = {
   productId: number;
@@ -54,32 +55,6 @@ function calculateSubtotal(
   return subtotal;
 }
 
-async function generatePurchaseInvoiceNumber(
-  companyId: number,
-): Promise<string> {
-  const invoices = await db.orm.public.PurchaseInvoice.where({
-    companyId,
-  }).all();
-
-  let maxNumber = 0;
-
-  for (const invoice of invoices) {
-    const match = invoice.invoiceNumber.match(/^PURCH-INV-(\d+)$/);
-
-    if (!match) continue;
-
-    const number = Number(match[1]);
-
-    if (number > maxNumber) {
-      maxNumber = number;
-    }
-  }
-
-  const nextNumber = maxNumber + 1;
-
-  return `PURCH-INV-${String(nextNumber).padStart(3, '0')}`;
-}
-
 export async function createPurchaseInvoice(
   companyId: number,
   invoiceData: PurchaseInvoiceCreateInput,
@@ -107,7 +82,9 @@ export async function createPurchaseInvoice(
     throw new ValidationError('Tax cannot be negative');
   }
 
-  const company = await db.orm.public.Company.where({ id: companyId }).first();
+  const company = await db.orm.public.Company.where({
+    id: companyId,
+  }).first();
 
   if (!company) {
     throw new NotFoundError('Company not found');
@@ -168,9 +145,15 @@ export async function createPurchaseInvoice(
   const subtotalAfterDiscount = subtractDecimal(subtotal, discount);
 
   const total = addDecimal(subtotalAfterDiscount, tax);
-  const invoiceNumber = await generatePurchaseInvoiceNumber(companyId);
 
   return db.transaction(async (tx) => {
+    const sequenceNumber = await reserveInvoiceNumber(
+      companyId,
+      'PURCHASE',
+      tx,
+    );
+    const invoiceNumber = `PURCH-INV-${String(sequenceNumber).padStart(3, '0')}`;
+
     const invoice = await tx.orm.public.PurchaseInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,
@@ -218,7 +201,9 @@ export async function createPurchaseInvoice(
 }
 
 export async function getPurchaseInvoicesByCompanyId(companyId: number) {
-  const invoices = await db.orm.public.PurchaseInvoice.where({ companyId })
+  const invoices = await db.orm.public.PurchaseInvoice.where({
+    companyId,
+  })
     .include('supplier', (supplier) => supplier.select('name'))
     .include('items', (item) => item.select('id'))
     .orderBy((invoice) => invoice.createdAt.desc())

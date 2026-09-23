@@ -34,6 +34,13 @@
               { "name": "AZN", "value": "AZN" }
             ]
           },
+          "InvoiceSequenceType": {
+            "codecId": "pg/text@1",
+            "members": [
+              { "name": "SALES", "value": "SALES" },
+              { "name": "PURCHASE", "value": "PURCHASE" }
+            ]
+          },
           "InvoiceStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -167,6 +174,11 @@
                 "on": { "localFields": ["id"], "targetFields": ["companyId"] },
                 "to": { "model": "Customer", "namespace": "public" }
               },
+              "invoiceSequences": {
+                "cardinality": "1:N",
+                "on": { "localFields": ["id"], "targetFields": ["companyId"] },
+                "to": { "model": "InvoiceSequence", "namespace": "public" }
+              },
               "messages": {
                 "cardinality": "1:N",
                 "on": { "localFields": ["id"], "targetFields": ["companyId"] },
@@ -295,6 +307,44 @@
               },
               "namespaceId": "public",
               "table": "customer"
+            }
+          },
+          "InvoiceSequence": {
+            "fields": {
+              "companyId": {
+                "nullable": false,
+                "type": { "codecId": "pg/int4@1", "kind": "scalar" }
+              },
+              "nextNumber": {
+                "nullable": false,
+                "type": { "codecId": "pg/int4@1", "kind": "scalar" }
+              },
+              "type": {
+                "nullable": false,
+                "type": { "codecId": "pg/text@1", "kind": "scalar" },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "InvoiceSequenceType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              }
+            },
+            "relations": {
+              "company": {
+                "cardinality": "N:1",
+                "on": { "localFields": ["companyId"], "targetFields": ["id"] },
+                "to": { "model": "Company", "namespace": "public" }
+              }
+            },
+            "storage": {
+              "fields": {
+                "companyId": { "column": "companyId" },
+                "nextNumber": { "column": "nextNumber" },
+                "type": { "column": "type" }
+              },
+              "namespaceId": "public",
+              "table": "invoiceSequence"
             }
           },
           "Message": {
@@ -1332,6 +1382,7 @@
     "chats": { "model": "Chat", "namespace": "public" },
     "company": { "model": "Company", "namespace": "public" },
     "customer": { "model": "Customer", "namespace": "public" },
+    "invoiceSequence": { "model": "InvoiceSequence", "namespace": "public" },
     "messages": { "model": "Message", "namespace": "public" },
     "product": { "model": "Product", "namespace": "public" },
     "purchaseInvoice": { "model": "PurchaseInvoice", "namespace": "public" },
@@ -1597,6 +1648,63 @@
               ],
               "primaryKey": { "columns": ["id"] },
               "uniques": [{ "columns": ["companyId", "name"] }]
+            },
+            "invoiceSequence": {
+              "checks": [
+                {
+                  "expression": "\"type\" IN ('SALES', 'PURCHASE')",
+                  "name": "invoiceSequence_type_check_4ad5fba9",
+                  "prefix": "invoiceSequence_type_check"
+                }
+              ],
+              "columns": {
+                "companyId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "nextNumber": {
+                  "codecId": "pg/int4@1",
+                  "default": { "kind": "literal", "value": 1 },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "InvoiceSequenceType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": ["companyId"],
+                    "namespaceId": "public",
+                    "tableName": "invoiceSequence"
+                  },
+                  "target": {
+                    "columns": ["id"],
+                    "namespaceId": "public",
+                    "tableName": "company"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": ["companyId"],
+                  "name": "invoiceSequence_companyId_idx_33acc5ed",
+                  "prefix": "invoiceSequence_companyId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": { "columns": ["companyId", "type"] },
+              "uniques": []
             },
             "messages": {
               "checks": [
@@ -2882,6 +2990,10 @@
           },
           "valueSet": {
             "Currency": { "kind": "valueSet", "values": ["USD", "EUR", "AZN"] },
+            "InvoiceSequenceType": {
+              "kind": "valueSet",
+              "values": ["SALES", "PURCHASE"]
+            },
             "InvoiceStatus": {
               "kind": "valueSet",
               "values": ["ISSUED", "PAID", "CANCELLED"]
@@ -2900,7 +3012,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1f54fc2ea110385aaa7880c490149d2d7aa85099bad3e8ebc1a6dde4c7de0e45"
+    "storageHash": "b89c1a819dc82c98bd256a51011e8a158568cc58251b1fbbddfb8e0095c5c904"
   },
   "target": "postgres",
   "targetFamily": "sql"

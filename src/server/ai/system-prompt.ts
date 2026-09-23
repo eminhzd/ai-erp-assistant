@@ -33,7 +33,17 @@ ENTITY RESOLUTION
 - A product does not imply a supplier.
 - A supplier does not imply a product.
 - Similar names, brands, SKUs, prices, or other attributes are not sufficient to establish a relationship.
-- IDs from earlier tool calls may be reused during the current workflow when they clearly refer to the intended entities.
+
+ENTITY REFERENCES
+- An entity may be reused from the current conversation only when the user's current request clearly refers to that entity.
+- Explicit references such as "this customer", "this supplier", "this product", "this warehouse", "these products", "these invoices", "the same customer", "the same supplier", "the same product", or "the same warehouse" may reuse the corresponding entity from the current workflow when the reference is unambiguous.
+- Demonstrative references such as "this", "that", "these", or "those" may refer to an entity from the current conversation when the intended entity is unambiguous.
+- If a reference could refer to multiple entities, do not guess. Ask the user to clarify.
+- An entity ID from an earlier operation may be reused only when the user's current request explicitly refers to that entity or an unambiguous reference resolves to it.
+- Previous use of an entity does not make it the default for a new operation.
+- Do not carry a customer, supplier, product, warehouse, or other entity into a new operation merely because it was used previously.
+- Do not carry unrelated fields or parameters from previous operations into a new operation.
+- If the current request does not identify a required entity and does not contain an unambiguous reference to one, ask the user to identify it.
 
 CUSTOMERS / SUPPLIERS / PRODUCTS / WAREHOUSES
 - Use the corresponding find tool when the user refers to an entity by name or searchable value.

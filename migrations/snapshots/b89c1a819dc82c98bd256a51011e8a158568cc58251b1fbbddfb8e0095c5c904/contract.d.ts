@@ -30,7 +30,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1f54fc2ea110385aaa7880c490149d2d7aa85099bad3e8ebc1a6dde4c7de0e45'>;
+  StorageHashBase<'b89c1a819dc82c98bd256a51011e8a158568cc58251b1fbbddfb8e0095c5c904'>;
 export type ExecutionHash =
   ExecutionHashBase<'891bf0d86f923a373716b72b491408200d7de0bb02f347f0ce6b531d342da940'>;
 export type ProfileHash =
@@ -525,6 +525,11 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['output'];
     };
+    readonly InvoiceSequence: {
+      readonly companyId: CodecTypes['pg/int4@1']['output'];
+      readonly type: 'SALES' | 'PURCHASE';
+      readonly nextNumber: CodecTypes['pg/int4@1']['output'];
+    };
     readonly Message: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly companyId: CodecTypes['pg/int4@1']['output'];
@@ -685,6 +690,11 @@ export type FieldInputTypes = {
       readonly isActive: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['input'];
+    };
+    readonly InvoiceSequence: {
+      readonly companyId: CodecTypes['pg/int4@1']['input'];
+      readonly type: 'SALES' | 'PURCHASE';
+      readonly nextNumber: CodecTypes['pg/int4@1']['input'];
     };
     readonly Message: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -847,6 +857,11 @@ export type StorageColumnTypes = {
       readonly taxId: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['output'];
     };
+    readonly invoiceSequence: {
+      readonly companyId: CodecTypes['pg/int4@1']['output'];
+      readonly nextNumber: CodecTypes['pg/int4@1']['output'];
+      readonly type: 'SALES' | 'PURCHASE';
+    };
     readonly messages: {
       readonly chatId: CodecTypes['pg/int4@1']['output'];
       readonly companyId: CodecTypes['pg/int4@1']['output'];
@@ -1007,6 +1022,11 @@ export type StorageColumnInputTypes = {
       readonly phone: CodecTypes['pg/text@1']['input'] | null;
       readonly taxId: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['input'];
+    };
+    readonly invoiceSequence: {
+      readonly companyId: CodecTypes['pg/int4@1']['input'];
+      readonly nextNumber: CodecTypes['pg/int4@1']['input'];
+      readonly type: 'SALES' | 'PURCHASE';
     };
     readonly messages: {
       readonly chatId: CodecTypes['pg/int4@1']['input'];
@@ -1396,6 +1416,53 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'customer';
+                    readonly columns: readonly ['companyId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'company';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly invoiceSequence: {
+              columns: {
+                readonly companyId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly type: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly nextNumber: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['companyId', 'type'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'invoiceSequence_companyId_idx_33acc5ed';
+                  readonly prefix: 'invoiceSequence_companyId_idx';
+                  readonly columns: readonly ['companyId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'invoiceSequence';
                     readonly columns: readonly ['companyId'];
                   };
                   readonly target: {
@@ -2694,6 +2761,10 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['USD', 'EUR', 'AZN'];
             };
+            readonly InvoiceSequenceType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['SALES', 'PURCHASE'];
+            };
             readonly InvoiceStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['ISSUED', 'PAID', 'CANCELLED'];
@@ -2749,6 +2820,10 @@ type ContractBase = Omit<
     readonly salesInvoice: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SalesInvoice';
+    };
+    readonly invoiceSequence: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InvoiceSequence';
     };
     readonly salesInvoiceItem: {
       readonly namespace: 'public' & NamespaceId;
@@ -2946,6 +3021,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Customer';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['companyId'];
+                };
+              };
+              readonly invoiceSequences: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InvoiceSequence';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -3170,6 +3256,53 @@ type ContractBase = Omit<
                 readonly isActive: { readonly column: 'isActive' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly InvoiceSequence: {
+            readonly fields: {
+              readonly companyId: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/int4@1';
+                };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/text@1';
+                };
+              };
+              readonly nextNumber: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/int4@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly company: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Company';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['companyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'invoiceSequence';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly companyId: { readonly column: 'companyId' };
+                readonly type: { readonly column: 'type' };
+                readonly nextNumber: { readonly column: 'nextNumber' };
               };
             };
           };
@@ -4584,6 +4717,13 @@ type ContractBase = Omit<
             readonly members: readonly [
               { readonly name: 'USER'; readonly value: 'USER' },
               { readonly name: 'ASSISTANT'; readonly value: 'ASSISTANT' },
+            ];
+          };
+          readonly InvoiceSequenceType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'SALES'; readonly value: 'SALES' },
+              { readonly name: 'PURCHASE'; readonly value: 'PURCHASE' },
             ];
           };
         };

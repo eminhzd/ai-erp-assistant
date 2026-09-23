@@ -1,5 +1,12 @@
 import { db } from '@/prisma/db';
 
+import { getCustomerById } from '../customers/customer.service';
+import { getProductById } from '../products/product.service';
+import { createSalesInvoiceItemInTransaction } from '../sales-invoice-items/sales-invoice-items.service';
+import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
+import { getWarehouseById } from '../warehouses/warehouse.service';
+import { reserveInvoiceNumber } from '../invoice-sequences/invoice-sequence.service';
+
 import {
   addDecimal,
   compareDecimal,
@@ -10,12 +17,6 @@ import {
 } from '@/lib/decimal';
 
 import { NotFoundError, ValidationError } from '@/lib/errors';
-
-import { getCustomerById } from '../customers/customer.service';
-import { getProductById } from '../products/product.service';
-import { createSalesInvoiceItemInTransaction } from '../sales-invoice-items/sales-invoice-items.service';
-import { createStockMovementInTransaction } from '../stock-movements/stock-movements.service';
-import { getWarehouseById } from '../warehouses/warehouse.service';
 
 export type SalesInvoiceItemInput = {
   productId: number;
@@ -53,32 +54,6 @@ function calculateSubtotal(
   }
 
   return subtotal;
-}
-
-async function generateSalesInvoiceNumber(companyId: number): Promise<string> {
-  const invoices = await db.orm.public.SalesInvoice.where({
-    companyId,
-  }).all();
-
-  let maxNumber = 0;
-
-  for (const invoice of invoices) {
-    const match = invoice.invoiceNumber.match(/^SALES-INV-(\d+)$/);
-
-    if (!match) {
-      continue;
-    }
-
-    const number = Number(match[1]);
-
-    if (number > maxNumber) {
-      maxNumber = number;
-    }
-  }
-
-  const nextNumber = maxNumber + 1;
-
-  return `SALES-INV-${String(nextNumber).padStart(3, '0')}`;
 }
 
 export async function createSalesInvoice(
@@ -169,9 +144,11 @@ export async function createSalesInvoice(
   const subtotalAfterDiscount = subtractDecimal(subtotal, discount);
 
   const total = addDecimal(subtotalAfterDiscount, tax);
-  const invoiceNumber = await generateSalesInvoiceNumber(companyId);
 
   return db.transaction(async (tx) => {
+    const sequenceNumber = await reserveInvoiceNumber(companyId, 'SALES', tx);
+    const invoiceNumber = `SALES-INV-${String(sequenceNumber).padStart(3, '0')}`;
+
     const invoice = await tx.orm.public.SalesInvoice.create({
       ...invoiceDataWithoutItems,
       companyId,

@@ -24,10 +24,32 @@ import { createMessage } from '@/server/messages/messages.service';
 import { ERP_SYSTEM_PROMPT } from '@/server/ai/system-prompt';
 import type { ChatUIMessage } from '@/types/chat';
 
+const MAX_TEXT_LENGTH = 3000;
+const MAX_PARTS_PER_MESSAGE = 20;
+const MAX_MESSAGES = 50;
+
+const textPartSchema = z.object({
+  type: z.literal('text'),
+  text: z.string().max(MAX_TEXT_LENGTH),
+});
+
+const toolPartSchema = z
+  .object({
+    type: z.string().regex(/^tool-/),
+  })
+  .passthrough();
+
+const messagePartSchema = z.union([textPartSchema, toolPartSchema]);
+const chatUIMessageSchema = z.object({
+  id: z.string().optional(),
+  role: z.enum(['user', 'assistant']),
+  parts: z.array(messagePartSchema).min(1).max(MAX_PARTS_PER_MESSAGE),
+});
+
 const chatRequestSchema = z.object({
   chatId: z.number().int().positive().optional(),
   content: z.string().trim().min(1).max(3000).optional(),
-  messages: z.array(z.unknown()).optional(),
+  messages: z.array(chatUIMessageSchema).max(MAX_MESSAGES).optional(),
 });
 
 export async function POST(req: Request) {
@@ -45,7 +67,18 @@ export async function POST(req: Request) {
 
     const companyId = session.user.companyId;
 
-    const json = await req.json();
+    let json: unknown;
+
+    try {
+      json = await req.json();
+    } catch {
+      return Response.json(
+        {
+          error: 'Invalid JSON body',
+        },
+        { status: 400 },
+      );
+    }
 
     const validation = chatRequestSchema.safeParse(json);
 
@@ -60,16 +93,10 @@ export async function POST(req: Request) {
     }
 
     const { chatId, content, messages: uiMessages } = validation.data;
-    const isNewChat = !chatId;
+    const isNewChat = chatId === undefined;
 
     let currentChatId = chatId;
 
-    /*
-     * Create the chat on the first user message.
-     *
-     * Approval continuation already has an existing chatId,
-     * so it never enters this branch.
-     */
     if (!currentChatId) {
       if (!content) {
         return Response.json(

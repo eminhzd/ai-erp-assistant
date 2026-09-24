@@ -42,4 +42,3 @@ next-env.d.ts
 node_modules/
 dist/
 .env
-src/prisma/test.ts

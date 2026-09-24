@@ -79,6 +79,7 @@ export function Chat({
       new DefaultChatTransport({
         api: '/api/chat',
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         prepareSendMessagesRequest: ({ id, messages }) => {
           const lastMessage = messages.at(-1);
 
@@ -95,7 +96,6 @@ export function Chat({
               chatId: resolvedChatId,
               content,
               messages,
-              messageId: id,
             },
           };
         },

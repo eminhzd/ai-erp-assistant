@@ -18,7 +18,9 @@
     "start": "next start",
     "lint": "eslint",
     "prepare": "husky",
-    "contract:emit": "prisma-cli contract emit"
+    "contract:emit": "prisma-cli contract emit",
+    "eval": "npx tsx src/server/ai/evals/run-erp-evals.ts",
+    "db-test": "npx tsx src/prisma/test.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.64",

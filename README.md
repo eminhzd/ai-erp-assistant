@@ -9,15 +9,26 @@ Built as a portfolio project to explore how to integrate an LLM into a real busi
 
 ### AI-powered ERP workflow
 
-<video src="docs/screenshots/sales-invoice-workflow.mp4" controls></video>
+<video src="https://github.com/user-attachments/assets/a6d7265b-1113-4420-9318-a268402c6993" controls></video>
 
 ### Approval & responsive UI
 
-| Destructive-action approval                              | Mobile UI                                   |
-| -------------------------------------------------------- | ------------------------------------------- |
-| ![Approval dialog](docs/screenshots/approval-dialog.png) | ![Mobile chat](docs/screenshots/mobile.png) |
-
-                                                              ![Mobile sidebar](docs/screenshots/mobile-sidebar.png)
+<table>
+  <tr>
+    <th>Destructive-action approval</th>
+    <th>Mobile UI</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="docs/screenshots/approval-dialog.png" alt="Approval dialog">
+    </td>
+    <td>
+      <img src="docs/screenshots/mobile.png" alt="Mobile chat">
+      <br><br>
+      <img src="docs/screenshots/mobile-sidebar.png" alt="Mobile sidebar">
+    </td>
+  </tr>
+</table>
 
 ## Demo
 

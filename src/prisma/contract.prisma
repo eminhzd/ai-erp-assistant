@@ -38,7 +38,7 @@ model Company {
   email    String?
   phone    String?
   address  String?
-  currency Currency @default(AZN)
+  currency Currency @default(USD)
   isActive Boolean  @default(true)
   invoiceSequences InvoiceSequence[]
 

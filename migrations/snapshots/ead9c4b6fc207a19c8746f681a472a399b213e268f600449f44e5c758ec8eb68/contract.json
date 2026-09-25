@@ -1484,7 +1484,7 @@
                 },
                 "currency": {
                   "codecId": "pg/text@1",
-                  "default": { "kind": "literal", "value": "AZN" },
+                  "default": { "kind": "literal", "value": "USD" },
                   "nativeType": "text",
                   "nullable": false,
                   "valueSet": {
@@ -3012,7 +3012,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b89c1a819dc82c98bd256a51011e8a158568cc58251b1fbbddfb8e0095c5c904"
+    "storageHash": "ead9c4b6fc207a19c8746f681a472a399b213e268f600449f44e5c758ec8eb68"
   },
   "target": "postgres",
   "targetFamily": "sql"

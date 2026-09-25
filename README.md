@@ -1,549 +1,257 @@
 # AI ERP Assistant
 
-An AI-powered ERP assistant that allows users to manage and query business data through a natural-language chat interface.
+An ERP you can talk to. A multi-tenant ERP (customers, suppliers, products, warehouses, invoices, stock) with an AI tool-calling layer on top. The model never touches the database directly: it can only call explicitly registered tools, and every tool goes through the same domain services, validation, and business rules as the rest of the backend.
 
-The project combines a modern Next.js application with a multi-tenant ERP backend and an AI tool-calling layer. Instead of generating database queries directly, the AI interacts with the ERP through explicitly defined tools backed by domain services and business rules.
+> The LLM decides what operation is needed.
+> The application decides whether and how it is performed.
 
-The project was built as a portfolio project to explore the architecture and practical integration of AI into a real business application.
+Built as a portfolio project to explore how to integrate an LLM into a real business application while keeping business logic, data access, and AI behavior cleanly separated.
 
-## Features
+### AI-powered ERP workflow
 
-### AI Assistant
+<video src="docs/screenshots/sales-invoice-workflow.mp4" controls></video>
 
-- Natural-language interaction with ERP data
-- Tool calling for business operations
-- Context-aware conversations
-- Streaming AI responses
-- Tool execution status in the chat UI
-- Automatic persistence of user and assistant messages
-- Guardrails for ambiguous operations
-- Structured error handling between the application and AI layer
+### Approval & responsive UI
 
-The assistant can perform operations such as:
+| Destructive-action approval                              | Mobile UI                                   |
+| -------------------------------------------------------- | ------------------------------------------- |
+| ![Approval dialog](docs/screenshots/approval-dialog.png) | ![Mobile chat](docs/screenshots/mobile.png) |
 
-- Create, update, retrieve and delete customers
-- Create and retrieve suppliers
-- Create and retrieve products
-- Manage warehouses
-- Query warehouse stock
-- Create purchase invoices
-- Create sales invoices
-- Query stock movements
-- Perform inventory adjustments
+                                                              ![Mobile sidebar](docs/screenshots/mobile-sidebar.png)
 
-For ambiguous business operations, the assistant is instructed to request clarification instead of making assumptions. For example, when asked to "mark invoice 15 as paid", it must determine whether the invoice is a purchase or sales invoice before proceeding.
+## Demo
 
-### ERP Domain
+**Live demo:** `https://ai-erp-assistant-iota.vercel.app/`
 
-The application models a simplified but realistic distribution business:
+**Email:** `demo@example.com` · **Password:** `Demo1234!`
 
-- Companies
-- Users
-- Customers
-- Suppliers
-- Products
-- Warehouses
-- Warehouse stock
-- Purchase invoices
-- Purchase invoice items
-- Sales invoices
-- Sales invoice items
-- Stock movements
+The demo depends on an external AI provider (Google Gemini), so provider outages or rate limits can affect responses.
 
-Inventory changes are represented through stock movements:
+## What it can do
 
-- `PURCHASE`
-- `SALE`
-- `ADJUSTMENT_IN`
-- `ADJUSTMENT_OUT`
+- **Master data:** customers, suppliers, products, warehouses — search, create, update, soft-delete (deletes require approval)
+- **Stock:** per-warehouse stock levels, stock movement history, manual adjustments
+- **Invoices:** create purchase and sales invoices, inspect invoices and their line items, mark invoices as paid
+- Replies in whatever language the user writes in
 
-Purchase and sales operations update warehouse stock as part of the same transaction, keeping the invoice and inventory state consistent.
+### Try it
 
-### Authentication & Multi-tenancy
+| Prompt                                                                                             | What should happen                                                       |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `Show me all customers.`                                                                           | Lists customers via a read tool                                          |
+| `How much Coca-Cola 0.5L is in the Main Warehouse?`                                                | Resolves product and warehouse, reads stock through a stock tool         |
+| `Which products in the Main Warehouse have fewer than 20 units?`                                   | Reads warehouse stock and filters by the threshold given                 |
+| `Create a sales invoice for North Star Café from the Main Warehouse: 5 Coca-Cola 0.5L at $2 each.` | Resolves customer, warehouse, and product; checks stock; creates invoice |
+| `Create a purchase invoice from PepsiCo.`                                                          | Asks for the missing warehouse and items instead of guessing             |
+| `Mark invoice 15 as paid.`                                                                         | Asks whether it's a purchase or a sales invoice                          |
+| `Delete customer North Star Café.`                                                                 | Nothing happens until approved in the dialog                             |
+| `Cancel sales invoice 1.`                                                                          | States cancellation is unsupported; does not simulate it                 |
 
-- Authentication with Auth.js
-- Credentials-based login
-- Company-based tenant isolation
-- Every ERP query is scoped to the authenticated user's company
-- Unauthenticated users are redirected to the login page
-
-The company context is propagated into the service and AI tool layers, preventing tools from accessing data belonging to another company.
-
-## Architecture
-
-The project follows a layered architecture where business logic is kept independent from individual entry points.
+## How the AI is constrained
 
 ```text
-                    ┌─────────────────────┐
-                    │      Chat UI        │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    Chat API Route   │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │      AI Layer       │
-                    │                     │
-                    │ System Prompt       │
-                    │ Tool Registry       │
-                    │ ERP Tools           │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Domain Services   │
-                    │                     │
-                    │ Customers           │
-                    │ Products            │
-                    │ Invoices            │
-                    │ Stock               │
-                    │ Warehouses           │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │     Prisma ORM      │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   PostgreSQL / Neon │
-                    └─────────────────────┘
+User → Chat UI → /api/chat → LLM (Vercel AI SDK + Gemini)
+                                  │  tool calls (registered tools only)
+                                  ▼
+                            ERP tools  ← Zod input schemas, needsApproval on deletes
+                                  │  companyId from the session (never client-supplied)
+                                  ▼
+                            Domain services  ← validation, business rules, transactions
+                                  ▼
+                            Custom Prisma-based ORM → PostgreSQL
 ```
 
-### Why this architecture?
+Tools are intentionally thin. Each one is created for an already-authenticated company and only validates input, calls a service, and returns a structured result (simplified excerpt from `customer-tools.ts`):
 
-The AI layer does not contain the ERP business logic itself.
+```ts
+export function createCustomerTools(companyId: number) {
+  // companyId is closed over from the session — never a tool parameter
+  return {
+    deleteCustomer: tool({
+      description:
+        'Soft-delete an active customer. ... requires user confirmation.',
+      inputSchema: z.object({ customerId: z.number().int().positive() }),
+      needsApproval: true, // the SDK will not run execute() until the user approves
+      execute: ({ customerId }) =>
+        runTool('deleteCustomer', 'Customer could not be deleted.', () =>
+          deleteCustomer(companyId, customerId),
+        ),
+    }),
+    // ...
+  };
+}
+```
 
-AI tools act as an interface between the language model and the existing domain services:
+The guarantees fall into two categories, and knowing which is which matters.
+
+### Enforced by code
+
+| Guarantee                                | Mechanism                                                                                                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The model can only do what is registered | A fixed tool registry (`erp-tools.ts`); no raw SQL or DB access is ever exposed to the model                                                                 |
+| Tenant isolation                         | Tool factories close over the session's `companyId`; no tool input schema accepts a company parameter; every service query filters by `companyId`            |
+| Invented or foreign IDs are harmless     | Services verify existence and ownership before acting. An ID belonging to another company is indistinguishable from a nonexistent one (`NotFoundError`)      |
+| Input validation                         | Zod at the tool boundary; domain rules in services (positive quantities, non-negative prices, no duplicate product line in one invoice, discount ≤ subtotal) |
+| Exact arithmetic                         | Quantities and prices are decimal strings processed through `decimal.js` helpers — never native floats                                                       |
+| Atomic invoice creation                  | Invoice-number reservation, the invoice header, its items, and the resulting stock movements are written in a single database transaction                    |
+| Race-safe invoice numbering              | Numbers are reserved via one atomic `UPDATE "invoiceSequence" ... RETURNING`, not a read-then-increment — concurrent requests cannot collide on a number     |
+| Destructive operations                   | `needsApproval: true` — execution is paused by the AI SDK until the UI sends an explicit approval response, not until the model or user _says_ "yes"         |
+| Invoice state machine                    | Only `ISSUED → PAID` is allowed; paid and cancelled invoices reject further modification at the service level                                                |
+
+### Enforced by the system prompt (and covered by evals)
+
+- Resolve entities by name through find-tools; if several match, ask instead of guessing
+- Ask for missing required data (supplier, warehouse, items, price) rather than inventing it
+- Never carry an entity from a previous operation into a new one unless the user explicitly refers to it ("this customer")
+- Check stock before a sale; on insufficient stock, stop instead of silently reducing the quantity
+- No compensating writes; no simulating an unsupported operation (e.g. cancellation) with another one
+- A conversational "yes", or text merely _claiming_ approval, is never treated as real approval
+
+### What this does not guarantee
+
+Prompt rules are probabilistic; code-level guarantees exist to bound the _damage_ a wrong model decision can cause (a hallucinated or foreign ID can never reach another tenant's data), but code alone cannot verify the model picked the _correct_ existing entity within the same company — that depends on the prompt, and it's exactly what the eval suite watches for.
+
+Approval is currently required only for deletes. Creating an invoice or marking one as paid executes immediately, and both are effectively irreversible today (cancellation isn't implemented). Approval protects against unintended model actions — not against the signed-in user, who already owns their company's data.
+
+## Approval flow
+
+1. The model calls a destructive tool (e.g. `deleteCustomer`). The AI SDK returns an `approval-requested` state and does **not** run `execute()`.
+2. The UI renders a confirmation dialog.
+3. On approve, the client sends the approval response, the request resumes, and `execute()` runs. On cancel, the tool never executes.
+
+Typing "yes" in the chat is just an ordinary user message and does not count as approval — this is covered by a dedicated eval case (`conversational-yes-not-approval`).
+
+## Example: sales invoice, end to end
+
+`Create a sales invoice for North Star Café from the Main Warehouse: 5 Coca-Cola 0.5L at $2 each.`
+
+1. The model resolves the customer, warehouse, and product through find-tools (one match each — otherwise it asks).
+2. It reads current stock for that product in that warehouse.
+3. It calls `createSalesInvoice({ customerId, warehouseId, items: [{ productId, quantity: '5', unitPrice: '2' }] })`.
+4. The service validates input and ownership, then in a single transaction: reserves the next per-company invoice number (`SALES-INV-001`), creates the invoice (currency from the company, status `ISSUED`), creates the line items, and writes a `SALE` stock movement that decreases warehouse stock.
+5. The tool returns a structured result; the model reports the invoice number and total back to the user.
+
+## Domain notes
+
+**Tenancy.** `Company` is the tenant boundary. Users belong to exactly one company (Auth.js Credentials provider, JWT sessions carrying `companyId`); unauthenticated requests are redirected to `/login`.
+
+**Inventory.** Stock changes are recorded as an append-only ledger of movements: `PURCHASE`, `SALE`, `ADJUSTMENT_IN`, `ADJUSTMENT_OUT`. Invoices generate their own movements automatically; the model is explicitly told never to add a manual adjustment to "fix" an invoice-driven stock change.
+
+**Invoice numbering.** Numbers come from per-company, per-type sequences (`InvoiceSequence`, initialized for both `SALES` and `PURCHASE` at company registration), reserved atomically inside the invoice-creation transaction via `reserveInvoiceNumber` — not `MAX(id) + 1` — so concurrent requests can't be handed the same number.
+
+**Errors.** Services throw `ValidationError`, `NotFoundError`, `ConflictError`. Tools (via `runTool`) turn these into readable results the assistant can explain in business terms; unexpected failures return a generic message, and the model is instructed never to expose internals (stack traces, SQL errors) to the user.
+
+**Persistence.** Chats and messages are stored per company; responses stream to the client, and tool-call state is surfaced in the UI as it happens. Layout is responsive — the sidebar collapses into a drawer on mobile.
+
+## AI evaluation
+
+`src/server/ai/evals/` contains scenario-based regression tests for AI tool-calling behavior — not general LLM benchmarks, but application-specific checks that catch behavior regressions after changing prompts, tools, schemas, or orchestration.
+
+Each run seeds an isolated, disposable company through the real service layer (not direct DB writes), runs a fixed set of prompts against the same `system` + `tools` the live route uses, and tears the company down afterward.
+
+The suite covers:
+
+- explicit requests → correct tool and correct arguments
+- missing required data (customer, price) → the write is not executed
+- entity context → implicit reuse across turns is prevented; explicit references ("this customer") are resolved correctly
+- destructive operations → deletion requires real SDK approval, not just a proposed call
+- fake or conversational "approval" in plain text → cannot bypass the approval mechanism
+- irrelevant questions → no ERP tool call
+- unsupported operations (cancellation) → no simulated workaround
+- multi-step workflows → required intermediate reads (e.g. a stock check before a sale) are allowed within one turn
+
+Run it:
+
+```bash
+npm run eval
+```
+
+Requires `GOOGLE_GENERATIVE_AI_API_KEY` and a non-production `DATABASE_URL` — this makes real, billed calls to the model and writes to (then deletes from) the database.
+
+### Current result
 
 ```text
-AI Tool → Domain Service → Database
+Result: 11/11 passed
 ```
 
-This keeps business rules independent from the AI provider and makes the same services reusable from other application entry points.
+The evaluator checks both the tool calls the model proposed and which ones actually executed, including expected arguments and the approval boundary specifically.
 
-For example:
+## Tech stack
 
-```text
-Client
-  ↓
-Server Action
-  ↓
-Domain Service
-  ↓
-Database
-```
+Next.js 16 (App Router, Route Handlers) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui · Auth.js (NextAuth v5, Credentials + JWT) · Vercel AI SDK with Google Gemini (`gemini-3.5-flash-lite`) — tool calling, streaming, tool approval · Zod · PostgreSQL via a custom Prisma-based ORM (`@prisma/orm-postgres`) · ESLint, Prettier, Husky, lint-staged
 
-and:
-
-```text
-AI Tool
-  ↓
-Domain Service
-  ↓
-Database
-```
-
-The API route also calls services directly where appropriate instead of routing requests through Server Actions.
-
-This avoids duplicating business logic between Server Actions and AI tools.
-
-## AI Tool Architecture
-
-ERP capabilities are exposed to the model through dedicated tool modules.
-
-```text
-src/server/ai/
-├── erp-tools.ts
-├── system-prompt.ts
-└── tools/
-    ├── customer-tools.ts
-    ├── product-tools.ts
-    ├── purchase-invoice-items-tools.ts
-    ├── purchase-invoice-tools.ts
-    ├── sales-invoice-items-tools.ts
-    ├── sales-invoice-tools.ts
-    ├── stock-movement-tools.ts
-    ├── supplier-tools.ts
-    ├── warehouse-stock-tools.ts
-    └── warehouse-tools.ts
-```
-
-The central tool registry determines which ERP capabilities are available to the assistant.
-
-Each tool:
-
-1. Validates its input with Zod.
-2. Receives the authenticated `companyId`.
-3. Calls the appropriate domain service.
-4. Converts application errors into useful AI-facing responses.
-5. Returns structured information to the model.
-
-The model never receives unrestricted database access.
-
-## Error Handling
-
-Error handling was designed around the distinction between expected business errors and unexpected system failures.
-
-The domain layer uses explicit application errors such as:
-
-- `ValidationError`
-- `NotFoundError`
-- `ConflictError`
-
-For example:
-
-```text
-Invalid quantity
-        ↓
-ValidationError
-        ↓
-AI Tool
-        ↓
-Readable tool result
-        ↓
-AI explains the problem to the user
-```
-
-This allows the assistant to respond naturally to business constraints instead of exposing raw database or application errors.
-
-Examples include:
-
-- Product does not exist
-- Customer does not belong to the current company
-- Invoice does not contain the requested product
-- Stock is insufficient
-- Invoice and stock movement do not match
-- Duplicate stock movement
-- Invalid invoice references
-
-The AI is therefore able to distinguish between an operation that failed because of a business rule and an unexpected application failure.
-
-## Inventory Model
-
-Inventory is not stored as a single manually updated number.
-
-Warehouse stock is affected by stock movements generated by business operations.
-
-```text
-Purchase Invoice
-      ↓
-PURCHASE movement
-      ↓
-Warehouse Stock ↑
-```
-
-```text
-Sales Invoice
-      ↓
-SALE movement
-      ↓
-Warehouse Stock ↓
-```
-
-Manual corrections use:
-
-```text
-ADJUSTMENT_IN
-ADJUSTMENT_OUT
-```
-
-Stock-related operations are executed transactionally so that the movement and corresponding stock change are committed together.
-
-This prevents partially applied inventory operations.
-
-## Database
-
-The application uses PostgreSQL hosted on Neon and Prisma ORM.
-
-The main entities are:
-
-```text
-Company
- ├── User
- ├── Customer
- ├── Supplier
- ├── Product
- ├── Warehouse
- │     └── WarehouseStock
- ├── PurchaseInvoice
- │     └── PurchaseInvoiceItem
- ├── SalesInvoice
- │     └── SalesInvoiceItem
- └── StockMovement
-```
-
-The `Company` entity acts as the tenant boundary.
-
-Every business query includes the company context to enforce tenant isolation at the service layer.
-
-## Tech Stack
-
-### Frontend
-
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui
-- Base UI
-- Lucide Icons
-
-### Backend
-
-- Next.js App Router
-- Server Actions
-- Route Handlers
-- Domain/service layer
-- Auth.js
-
-### AI
-
-- AI SDK
-- Google Gemini
-- Tool calling
-- Zod schemas
-- Streaming responses
-
-### Database
-
-- PostgreSQL
-- Neon
-- Prisma ORM
-
-### Developer Tooling
-
-- ESLint
-- Prettier
-- Husky
-- lint-staged
-
-## UI & Responsive Design
-
-The application was designed around a desktop ERP workflow while remaining usable on smaller screens.
-
-### Desktop
-
-The desktop layout uses:
-
-- Persistent sidebar
-- Chat navigation
-- New Chat action
-- Header actions
-- Main conversation area
-
-### Mobile
-
-At smaller screen widths:
-
-- The persistent sidebar is hidden
-- Navigation is opened through a menu button
-- The New Chat action moves into the header
-- Sidebar functionality is exposed through a mobile drawer
-
-The mobile navigation is designed to reuse the same navigation structure as the desktop sidebar rather than maintaining separate navigation logic.
-
-## Project Structure
+## Project structure
 
 ```text
 src/
 ├── app/
-│   ├── (chat)/
-│   │   ├── chat/
-│   │   │   └── [id]/
-│   │   │       └── page.tsx
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   │
-│   ├── actions/
-│   │   ├── chat.actions.ts
-│   │   ├── message.actions.ts
-│   │   └── user.actions.ts
-│   │
-│   ├── api/
-│   │   ├── auth/
-│   │   └── chat/
-│   │
-│   ├── login/
-│   ├── register/
-│   └── globals.css
-│
+│   ├── api/chat/          POST /api/chat — validates, streams, persists
+│   ├── api/auth/          NextAuth route handlers
+│   ├── actions/           server actions (chat, user registration)
+│   ├── (app)/             authenticated pages (chat, customers, products, ...)
+│   ├── login/ register/
 ├── components/
-│   ├── chat/
+│   ├── chat/              chat UI, tool status, approval dialog
 │   ├── confirmation-dialog/
-│   ├── layout/
-│   ├── navigation/
-│   └── ui/
-│
-├── server/
-│   ├── ai/
-│   │   ├── tools/
-│   │   └── erp-tools.ts
-│   │
-│   ├── chat/
-│   ├── customers/
-│   ├── messages/
-│   ├── products/
-│   ├── purchase-invoice/
-│   ├── purchase-invoice-items/
-│   ├── sales-invoice/
-│   ├── sales-invoice-items/
-│   ├── stock-movements/
-│   ├── suppliers/
-│   ├── users/
-│   ├── warehouse-stock/
-│   ├── warehouses/
-│   └── seed-demo.ts
-│
-└── prisma/
+│   └── layout/ navigation/ ui/
+└── server/
+    ├── ai/
+    │   ├── system-prompt.ts
+    │   ├── erp-tools.ts        aggregates all domain tool factories
+    │   ├── tools/               one file per domain
+    │   └── evals/                seed, cases, runner (see AI evaluation)
+    └── <domain>/                customers, suppliers, products, warehouses,
+                                  warehouse-stock, stock-movements,
+                                  purchase-invoice(-items), sales-invoice(-items),
+                                  invoice-sequences, chat, messages, users
+prisma/ (schema, contract, generated client)
 ```
 
-## Getting Started
+Business logic lives in `server/<domain>` services — never in components or tool definitions. Tools are a thin translation layer between the model and the services.
 
-### Prerequisites
+## Getting started
 
-- Node.js
-- PostgreSQL database
-- Google Gemini API key
-
-### Installation
-
-Clone the repository and install dependencies:
+Requirements: Node.js, a PostgreSQL database, a Google Gemini API key.
 
 ```bash
 npm install
 ```
 
-Create an environment file:
+Copy `.env.example` to `.env` and fill in:
 
 ```env
-DATABASE_URL="your-postgresql-connection-string"
-GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-api-key"
-AUTH_SECRET="your-auth-secret"
+# PostgreSQL connection string (Neon, local, etc.)
+# Example: postgresql://user:password@host:5432/dbname?sslmode=require
+DATABASE_URL=
+
+# Google AI Studio / Gemini API key
+# https://aistudio.google.com/apikey
+GOOGLE_GENERATIVE_AI_API_KEY=
+
+# NextAuth secret — random string, e.g.: openssl rand -base64 32
+AUTH_SECRET=
 ```
 
-Run the development server:
+Generate the ORM client contract:
 
 ```bash
-npm run dev
+npm run contract:emit
 ```
 
-Open:
-
-```text
-http://localhost:3000
-```
-
-### Demo Data
-
-The project includes a demo seed that creates:
-
-- A demo company
-- A demo user
-- Customers
-- Suppliers
-- Products
-- Warehouses
-- Purchase invoices
-- Sales invoices
-- Stock movements
-
-Run the seed with:
+Seed demo data (company, user, customers, suppliers, products, warehouses, invoices, stock movements) and start the app:
 
 ```bash
 npx tsx src/server/seed-demo.ts
+npm run dev
 ```
 
-The seed creates realistic business data that can be used to test the ERP assistant immediately after setup.
+Open http://localhost:3000.
 
-## Example Prompts
+## Limitations
 
-After logging in, the assistant can be tested with prompts such as:
-
-```text
-Show me all customers.
-```
-
-```text
-How much Coca-Cola 0.5L do we have?
-```
-
-```text
-Show me the stock in the Main Warehouse.
-```
-
-```text
-Which products are low in stock?
-```
-
-```text
-Create a customer called North Star Café.
-```
-
-```text
-Create a sales invoice for The Corner Kitchen.
-```
-
-```text
-Create a purchase invoice from PepsiCo.
-```
-
-```text
-What is the total value of our current stock?
-```
-
-The assistant can also handle situations where additional clarification is required instead of guessing the user's intent.
-
-## Development Approach
-
-The project was developed incrementally rather than starting with the AI layer first.
-
-The development process focused on building the underlying ERP functionality before exposing it to the model:
-
-```text
-Database
-   ↓
-Domain Services
-   ↓
-Business Rules & Transactions
-   ↓
-Authentication & Tenant Isolation
-   ↓
-AI Tools
-   ↓
-AI Error Handling
-   ↓
-Chat UI
-   ↓
-Responsive UI
-```
-
-This approach makes the AI integration an additional application layer rather than the foundation of the business logic.
-
-The final stage focused on integrating all ERP capabilities into the AI tool layer, improving AI-facing error handling, and refining the UI for desktop and mobile use.
-
-## What This Project Demonstrates
-
-The main purpose of the project is to demonstrate practical experience with:
-
-- React and Next.js application architecture
-- TypeScript
-- Server-side application design
-- Domain/service-oriented architecture
-- PostgreSQL data modeling
-- Prisma ORM
-- Multi-tenant data isolation
-- Authentication
-- Transactional inventory operations
-- AI tool calling
-- Structured AI inputs with Zod
-- AI-specific error handling
-- Streaming interfaces
-- Responsive UI design
-- Separation of business logic from presentation and AI layers
-
-Rather than treating an LLM as a direct database interface, the project uses explicit tools and domain services to constrain what the assistant can do and ensure that ERP operations still follow application-level business rules.
+- Simplified distribution domain: no taxes/accounting beyond a flat tax amount, no procurement or logistics workflows
+- No roles or permissions beyond company-level isolation — any user in a company has full access to that company's data
+- Invoice cancellation is not implemented
+- Reporting is limited: aggregates such as stock valuation have no dedicated tools
+- Model behavior depends on an external provider and is not fully deterministic
+- The AI eval suite is run manually, not gated in CI, given the cost and latency of real model calls

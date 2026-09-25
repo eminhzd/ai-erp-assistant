@@ -184,14 +184,9 @@ export function Chat({
 
     setNewMessage('');
 
-    try {
-      await sendMessage({
-        text: result.data.content,
-      });
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      toast.error('Failed to send message');
-    }
+    await sendMessage({
+      text: result.data.content,
+    });
   };
 
   const handleScroll = () => {
@@ -207,6 +202,12 @@ export function Chat({
 
     setIsAtBottom(atBottom);
   };
+
+  useEffect(() => {
+    if (!error) return;
+
+    toast.error(error.message, { position: 'top-right' });
+  }, [error]);
 
   useEffect(() => {
     if (status === 'ready') {
@@ -373,12 +374,6 @@ export function Chat({
           {isLoading ? 'Sending...' : 'Send'}
         </Button>
       </div>
-
-      {error && (
-        <div className="text-destructive px-4 pb-2 text-sm">
-          {error.message}
-        </div>
-      )}
     </div>
   );
 }

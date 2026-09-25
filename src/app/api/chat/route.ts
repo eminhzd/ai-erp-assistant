@@ -1,6 +1,6 @@
 import { google } from '@ai-sdk/google';
-
 import {
+  APICallError,
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -10,8 +10,8 @@ import {
 } from 'ai';
 
 import * as z from 'zod';
-
 import { auth } from '@/auth';
+
 import {
   createChatWithMessage,
   getChatById,
@@ -22,6 +22,7 @@ import { generateChatTitle } from '@/server/ai/chat-title';
 import { createMessage } from '@/server/messages/messages.service';
 
 import { ERP_SYSTEM_PROMPT } from '@/server/ai/system-prompt';
+
 import type { ChatUIMessage } from '@/types/chat';
 
 const MAX_TEXT_LENGTH = 3000;
@@ -43,14 +44,32 @@ const messagePartSchema = z.union([textPartSchema, toolPartSchema]);
 const chatUIMessageSchema = z.object({
   id: z.string().optional(),
   role: z.enum(['user', 'assistant']),
-  parts: z.array(messagePartSchema).min(1).max(MAX_PARTS_PER_MESSAGE),
+  parts: z.array(messagePartSchema).max(MAX_PARTS_PER_MESSAGE),
 });
 
 const chatRequestSchema = z.object({
   chatId: z.number().int().positive().optional(),
-  content: z.string().trim().min(1).max(3000).optional(),
+  content: z.string().trim().min(1).max(MAX_TEXT_LENGTH).optional(),
   messages: z.array(chatUIMessageSchema).max(MAX_MESSAGES).optional(),
 });
+
+function getChatErrorMessage(error: unknown) {
+  if (APICallError.isInstance(error)) {
+    if (error.statusCode === 429) {
+      return 'AI usage limit reached. Please try again later.';
+    }
+
+    if (error.statusCode === 503) {
+      return 'AI is temporarily unavailable. Please try again later.';
+    }
+
+    if (error.statusCode === 408) {
+      return 'The AI request timed out. Please try again.';
+    }
+  }
+
+  return 'Something went wrong while processing your request.';
+}
 
 export async function POST(req: Request) {
   try {
@@ -155,6 +174,10 @@ export async function POST(req: Request) {
       tools,
       stopWhen: stepCountIs(8),
       maxRetries: 0,
+
+      onError({ error }) {
+        console.error('AI provider error:', error);
+      },
     });
 
     return createUIMessageStreamResponse({
@@ -172,6 +195,10 @@ export async function POST(req: Request) {
 
           const uiStream = toUIMessageStream({
             stream: streamResult.stream,
+
+            onError(error) {
+              return getChatErrorMessage(error);
+            },
           });
 
           const reader = uiStream.getReader();

@@ -73,7 +73,7 @@ export const ChatBtn = ({
       const result = await updateChatTitleAction(chat.id, newTitle);
 
       if (!result.success) {
-        toast.error(result.error);
+        toast.error(result.error, { position: 'top-right' });
         return;
       }
 
@@ -81,7 +81,7 @@ export const ChatBtn = ({
       router.refresh();
     } catch (error) {
       console.error('Failed to update chat title:', error);
-      toast.error('Failed to update chat title');
+      toast.error('Failed to update chat title', { position: 'top-right' });
     } finally {
       setIsSaving(false);
     }
@@ -104,7 +104,7 @@ export const ChatBtn = ({
     const result = await deleteChatAction(chat.id);
 
     if (!result.success) {
-      toast.error(result.error);
+      toast.error(result.error, { position: 'top-right' });
       return;
     }
 
@@ -145,14 +145,21 @@ export const ChatBtn = ({
           )}
           onClick={() => router.push(`/chat/${chat.id}`)}
         >
-          <span className="block min-w-0 overflow-hidden mask-[linear-gradient(to_right,black_0%,black_calc(100%-2rem),transparent_100%)] whitespace-nowrap group-hover:mask-[linear-gradient(to_right,black_0%,black_calc(100%-5rem),transparent_calc(100%-2rem),transparent_100%)]">
+          <span className="block min-w-0 overflow-hidden whitespace-nowrap">
             {currentChatTitle}
           </span>
         </Button>
       )}
 
       {!isTitleEditActive && (
-        <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover:opacity-100">
+        <div
+          className={cn(
+            'absolute inset-y-0 right-0 flex items-center rounded-lg pr-1 pl-8 opacity-0 transition-opacity group-hover:opacity-100',
+            isSelected
+              ? 'bg-linear-to-l from-neutral-200 from-[3.5rem] to-transparent dark:from-neutral-700 dark:from-[3.5rem]'
+              : 'bg-linear-to-l from-neutral-100 from-[3.5rem] to-transparent group-hover:from-neutral-200 dark:from-neutral-800 dark:from-[3.5rem] dark:group-hover:from-neutral-700',
+          )}
+        >
           <Button
             variant="ghost"
             size="icon"

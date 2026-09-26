@@ -1,11 +1,14 @@
 'use server';
 
 import { auth } from '@/auth';
+import { revalidatePath } from 'next/cache';
+
 import {
   getChats,
   deleteChat,
   updateChatTitle,
 } from '@/server/chat/chat.service';
+
 import type { ActionResult } from '@/types/action-result';
 
 import * as z from 'zod';
@@ -71,6 +74,8 @@ export async function deleteChatAction(
 
   try {
     const response = await deleteChat(companyId, chatId);
+
+    revalidatePath('/');
 
     return {
       data: response,

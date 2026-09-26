@@ -107,12 +107,14 @@ export const ChatBtn = ({
       toast.error(result.error, { position: 'top-right' });
       return;
     }
-
-    router.refresh();
+    setIsDeleteDialogOpen(false);
 
     if (Number(selectedChatId) === chat.id) {
-      router.push('/');
+      router.replace('/');
+      return;
     }
+
+    router.refresh();
   };
 
   return (
@@ -182,17 +184,17 @@ export const ChatBtn = ({
           >
             <Trash2 className="size-3.5" />
           </Button>
-
-          <ConfirmDialog
-            open={isDeleteDialogOpen}
-            title="Delete chat?"
-            description="This action cannot be undone."
-            confirmText="Delete"
-            onCancel={() => setIsDeleteDialogOpen(false)}
-            onConfirm={handleDelete}
-          />
         </div>
       )}
+
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        title="Delete chat?"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        onCancel={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };

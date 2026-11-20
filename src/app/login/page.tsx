@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,10 +16,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: React.SubmitEvent) {
     event.preventDefault();
+
+    if (isLoading) return;
+
     setError('');
+    setIsLoading(true);
 
     try {
       const result = await signIn('credentials', {
@@ -29,6 +35,7 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError('Invalid email or password');
+        setIsLoading(false);
         return;
       }
 
@@ -36,6 +43,9 @@ export default function LoginPage() {
       router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -60,6 +70,7 @@ export default function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -73,13 +84,29 @@ export default function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
               placeholder="••••••••"
               required
+              disabled={isLoading}
             />
           </div>
 
-          {error && <p className="text-destructive text-sm">{error}</p>}
+          {error && (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          )}
 
-          <Button type="submit" className="w-full cursor-pointer">
-            Login
+          <Button
+            type="submit"
+            className="w-full cursor-pointer"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Login'
+            )}
           </Button>
 
           <div className="flex items-center justify-center gap-2">

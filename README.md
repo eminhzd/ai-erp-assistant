@@ -9,7 +9,14 @@ Built as a portfolio project to explore how to integrate an LLM into a real busi
 
 ### AI-powered ERP workflow
 
-<video src="https://github.com/user-attachments/assets/a6d7265b-1113-4420-9318-a268402c6993" controls></video>
+<video
+src="https://github.com/user-attachments/assets/1bb1fa9d-d735-468c-a48a-43cad98df446"
+controls
+playsinline
+preload="metadata"
+width="100%"
+
+> </video>
 
 ### Approval & responsive UI
 
